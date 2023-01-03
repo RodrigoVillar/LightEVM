@@ -2,23 +2,158 @@
 Module containining all EVM functionality
 """
 from EVMErrors import *
-from EVMUtils import *
+from utils.u256 import *
 import EVMOpcodes
 
 class EVMGlobalState():
 
     def __init__(self):
+
         self._chain_id = None
+
+    def get_account_balance(self, address: U256) -> U256:
+
+        pass
 
 
 class EVMTransaction():
+    """
+    Values should be immutable
+    """
 
     def __init__(self):
 
-        self._caller = None
+        self._tx_type = None
+        self._nonce = None
+        self._gas_price = None
+        self._gas_limit = None
+        # MUST BE EOA
         self._origin = None
-        self._value = None
 
+    def get_tx_type(self):
+
+        return self._tx_type
+
+    def get_nonce(self):
+
+        return self._nonce
+
+    def get_gas_price(self):
+
+        return self._gas_price
+
+    def get_gas_limit(self):
+
+        return self._gas_limit
+    
+    def get_origin(self):
+
+        return self._origin
+
+class EVMMessage():
+    """
+    Values can mutate between internal transactions
+    """
+    def __init__(self):
+
+        # Data passed with message (HEX)
+        self._data = None
+        # Sender of message
+        self._sender = None
+        # Function selector
+        self._sig = None
+        # Denominated in Wei
+        self._value = None
+        # Contract whose code will be executed
+        self._recipient = None
+        # Whether recipient is an EOA or not
+        self._is_eoa = None
+
+    def get_data(self):
+        """
+        Returns message data in its entirety
+        """
+        return self._data
+
+    def get_sender(self):
+
+        return self._sender
+
+    def get_sig(self):
+
+        return self._sig
+
+    def get_value(self):
+
+        return self._value
+
+    def get_recipient(self):
+
+        return self._recipient
+
+    def get_is_eoa(self):
+
+        return self._is_eoa
+
+    def load_data(self, i: U256) -> U256:
+        """
+        Returns the equivalent of msg.data[i:i+32]
+
+        If i + 32 is greater than the rightmost index, return value is
+        right-padded with 0s
+        """
+        data_list = list(self._data)
+        data_str = ""
+        for i in range(i * 2, (i * 2) + 64):
+
+            try:
+                data_str += data_list[i]
+            except:
+                data_str += "00"
+
+        data_int = int(data_str, 16)
+        return U256(data_int)
+
+    def get_data_size(self) -> U256:
+        """
+        Returns size of message data in bytes
+        """
+        pass
+
+class EVMBlock():
+
+    def __init__(self):
+
+        self._base_fee = None
+        self._number = None
+        self._gas_limit = None
+        self._coinbase = None
+        self._timestamp = None
+        self._difficulty = None
+
+    def get_base_fee(self):
+
+        return self._base_fee
+
+    def get_number(self):
+
+        return self._number
+
+    def get_gas_limit(self):
+
+        return self._gas_limit
+
+    def get_coinbase(self):
+
+        return self._coinbase
+
+    def get_timestamp(self):
+
+        return self._timestamp
+
+    def get_difficulty(self):
+
+        return self._difficulty
 
 class EVMMemory():
 
@@ -44,7 +179,24 @@ class EVMMemory():
 
         loaded_value_int = int(loaded_value_str, 16)
         return U256(loaded_value_int)
+
+    def load_custom(self, offset: U256, length: U256) -> str:
+        """
+        Functions that allows for values of arbitrary length to be loaded from
+        memory 
         
+        Since value is not guaranteed to be within the bounds of the U256 type,
+        a hexadecimal string is returned
+        """
+        offset_val = offset.to_int()
+        loaded_value_str = ""
+        for i in range(length):
+            try:
+                loaded_value_str = loaded_value_str + self._memory[offset_val + i] 
+            except:
+                loaded_value_str = loaded_value_str + "00"
+
+        return loaded_value_str
 
     def store(self, offset: U256, value: U256):
 
@@ -52,7 +204,7 @@ class EVMMemory():
         chopped_value_list = []
         offset_val = offset.to_int()
         for i in range(32):
-            # Slice up 32-charhex string
+            # Slice up 32-char hex string
             chopped_value_list.append(value_hex_str[i*2:(i*2)+2])
 
         for i in range(32):
@@ -181,10 +333,56 @@ class EVMStorage():
 
         pass
 
+class EVMRom():
+
+    def __init__(self, bytecode: str):
+
+        self._rom = {}
+        self._size = 0
+
+        while len(bytecode) != 0:
+
+            op = bytecode[:2].upper()
+            readable_op = EVMOpcodes.get_readable_opcode(op)
+            if op in EVMOpcodes.push_opcodes:
+                chars_selected = int(readable_op[4:]) * 2
+                metadata = bytecode[2:2 + chars_selected]
+                insn = EVMInstruction(op, readable_op, metadata) 
+                bytecode = bytecode[2 + chars_selected:]   
+            elif op in EVMOpcodes.dup_opcodes:
+                metadata = int(readable_op[3:])
+                insn = EVMInstruction(op, readable_op, metadata)
+                bytecode = bytecode[2:]
+            elif op in EVMOpcodes.swap_opcodes:
+                metadata = int(readable_op[4:])
+                insn = EVMInstruction(op, readable_op, metadata)
+                bytecode = bytecode[2:]
+            else:
+                insn = EVMInstruction(op, readable_op)
+                bytecode = bytecode[2:]
+
+            self._rom[self._size] = insn
+            self._size += insn.get_len()
+
+    def get_insn(self, line: int) -> EVMInstruction:
+
+        try:
+            return self._rom[line]
+        except:
+            raise EVMInstructionNotFound()
+
+    def get_size(self) -> int:
+
+        return self._size
+
+    def is_end_of_program(self, pc : int) -> bool:
+
+        return self._size <= pc
+
 
 class EVM():
 
-    def __init__(self, gas: int):
+    def __init__(self, gas: int, bytecode = None):
 
         self._stack = EVMStack()
         self._memory = EVMMemory()
@@ -192,11 +390,18 @@ class EVM():
         self._storage = EVMStorage()
         self._gas = gas
         # Maps integers to instructions
-        self._rom = {}
-        self._tx_data = None
+        self._rom = EVMRom(bytecode)
         self._stop = False
 
+        self._tx = EVMTransaction()
+
+        self._msg = EVMMessage()
+
         self._next_insn_slot = 0
+
+        self._current_block = EVMBlock()
+
+        self._state = EVMGlobalState()
 
     def insert_insn(self, insn: EVMInstruction):
 
@@ -463,7 +668,7 @@ class EVM():
         else:
             raise EVMOperationNotImplemented(insn_hex_code)
 
-        if self._pc >= self._next_insn_slot:
+        if self._rom.is_end_of_program(self._pc):
             self._stop = True
         self.print_stack()
         self.print_memory()

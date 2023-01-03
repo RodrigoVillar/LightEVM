@@ -1,5 +1,5 @@
 import EVMOpcodes
-from EVM import EVMInterpreter
+from evm import EVMInterpreter
 import sys
 
 class OpCode():

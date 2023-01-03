@@ -1,18 +1,8 @@
 """
-Module containing types for EVM
+File containing the U256 class and its associated logic
 """
 
-class U256OutOfBounds(Exception):
-
-    pass
-
-class U256InvalidType(Exception):
-
-    pass
-
-class S256InvalidType(Exception):
-
-    pass
+from exceptions import *
 
 class U256:
 
@@ -56,6 +46,14 @@ class U256:
     def to_int(self) -> int:
 
         return self._value
+
+    def get_bit_length(self) -> int:
+
+        # Convert number to binary
+        binary_value = bin(self._value)
+        binary_value = binary_value[2:]
+
+        return len(binary_value)
 
     def to_signed_int(self) -> int:
         """

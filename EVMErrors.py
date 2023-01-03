@@ -33,3 +33,7 @@ class EVMInvalidJumpDestination(Exception):
 class EVMOutsideStackBounds(Exception):
 
     pass
+
+class EVMUndefinedStackItem(Exception):
+
+    pass
