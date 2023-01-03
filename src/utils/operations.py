@@ -808,5 +808,6 @@ def match_insn(evm: EVM, insn: EVMInstruction):
     elif hex_insn == "FF":
         selfdestruct(evm)
     else:
+        # Might have to incorporate for INVALID
         raise EVMInstructionNotFound(hex_insn)
     
