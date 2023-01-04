@@ -1,41 +1,15 @@
 import EVMOpcodes
 from evm import EVMInterpreter
-import sys
-
-class OpCode():
-
-    def __init__(self, code: str, arg = None):
-
-        self._code = code
-        self._arg = arg
-
-    def get_string(self):
-
-        if self._arg != None:
-            return self._code + " " + self._arg
-        else:
-            return self._code
-
-
-class ReadableStack():
-
-    def __init__(self):
-        
-        self._stack = []
-
-    def push(self, opcode: OpCode):
-
-        self._stack.append(opcode)
-
-    def print(self):
-
-        for i in self._stack:
-            print(i.get_string())
-
+import sys, toml
 
 if __name__ == "__main__":
-    program = EVMInterpreter()
-    # bytecode = input("Please input the contract bytecode, STARTING WITH 0x: ")
+
+    with open("./execution.toml", "r"):
+
+        toml_dict = toml.load(f)
+
+    program = EVMInterpreter(toml_dict=toml_dict)
+    
     bytecode = sys.argv[1]
 
     # Formatting

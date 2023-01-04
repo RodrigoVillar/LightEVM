@@ -29,3 +29,7 @@ class EVMInstructionNotFound(Exception):
 class EVMInvalidJumpDesination(Exception):
 
     pass
+
+class EVMUnkwownAccountType(Exception):
+
+    pass

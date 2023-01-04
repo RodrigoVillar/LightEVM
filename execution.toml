@@ -1,0 +1,18 @@
+# TOML file containing the initial values that the EVM requires in order to run
+
+[chain]
+chain_id = 1
+
+[block]
+timestamp = 0
+difficulty = 0
+gas_limit = 0
+base_fee = 0
+
+[transaction]
+from = ""
+to = ""
+calldata = ""
+value = 0
+gas_limit = 0
+gas_price = 0

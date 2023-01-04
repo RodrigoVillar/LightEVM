@@ -5,23 +5,31 @@ from EVMErrors import *
 from utils.u256 import *
 import EVMOpcodes
 from utils import operations
-from data import EVMMemory, EVMStack, EVMStorage
+from data import EVMMemory, EVMStack
 from transaction import EVMMessage, EVMTransaction
 from block import EVMBlock
-from state import EVMGlobalState
+from state import EVMGlobalState, EVMStorage
 from bytecode import EVMInstruction, EVMRom
+
+class EVMInput():
+
+    def initialize_from_toml(self, toml_dict: dict):
+
+        self._chain_id = toml_dict["chain"]["chain_id"]
+        self._timestamp = toml_dict["block"]["timestamp"]
+        self._difficulty = toml_dict["block"]["difficulty"]
 
 class EVM():
 
-    def __init__(self, gas: int, bytecode = None):
+    def __init__(self, input: EVMInput):
 
         self._stack = EVMStack()
         self._memory = EVMMemory()
         self._pc = 0
         self._storage = EVMStorage()
-        self._gas = gas
+        self._gas = 0
         # Maps integers to instructions
-        self._rom = EVMRom(bytecode)
+        self._rom = EVMRom("")
         self._stop = False
 
         self._tx = EVMTransaction()
@@ -77,13 +85,19 @@ class EVM():
             print(f"Current Instruction: {insn}")
             print(f"Current Gas: {self._gas}")
             self.execute_insn(insn)
-            
+
+def initialize_from_toml(evm: EVM, toml: dict):
+
+    pass
 
 class EVMInterpreter():
 
-    def __init__(self):
+    def __init__(self, toml_dict = None):
 
         self._evm = EVM(100000)
+        if toml_dict != None:
+            initialize_from_toml(self._evm)
+
 
     def interpret(self, bytecode: str):
 

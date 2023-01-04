@@ -1,5 +1,5 @@
 """
-Module containg the stack, memory, and storage data structures for the EVM
+Module containg the stack and memory data structures for the EVM
 """
 from utils.u256 import *
 from EVMErrors import *
@@ -86,6 +86,12 @@ class EVMMemory():
         # print(self._memory)
         print("--------")
 
+    def size(self):
+        """
+        Returns the highest address that has been accessed
+        """
+        pass
+
 
 class EVMStack():
 
@@ -132,18 +138,3 @@ class EVMStack():
             raise EVMOutsideStackBounds(index.to_int())
 
         self._stack[index] = new_value
-
-class EVMStorage():
-
-    def __init__(self):
-
-        # MAPS U256 to U256
-        self._storage = {}
-
-    def get(self, key: U256) -> U256:
-
-        pass
-
-    def store(self, key: U256, value: U256):
-
-        pass

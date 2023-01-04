@@ -11,7 +11,11 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
     If charging for EXP operation, metadata is the number of bits of the
     exponent
     
-    If charging for SHA3 operation, metadata is the word size of the value being hashed 
+    If charging for SHA3 operation, metadata is the word size of the value being
+    hashed
+    
+    If charging for BALANCE, EXTCODESIZE, or EXTCODEHASH, metadata is a boolean
+    representing whether the address being accessed is touched 
     """
 
     insn = insn.upper()
