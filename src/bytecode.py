@@ -4,6 +4,7 @@ Module containing the ROM and Instruction classes
 
 import EVMOpcodes
 from utils.exceptions import *
+from utils.u256 import U256
 
 class EVMInstruction():
 
@@ -84,3 +85,7 @@ class EVMRom():
     def is_end_of_program(self, pc : int) -> bool:
 
         return self._size <= pc
+
+    def get_code(self, offset: U256, length: U256) -> str:
+
+        pass

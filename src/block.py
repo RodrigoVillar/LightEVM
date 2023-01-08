@@ -1,39 +1,41 @@
 """
 Module containing the Block class
 """
+from utils.address import EVMAddress
+from utils.u256 import U256
 
 class EVMBlock():
 
-    def __init__(self):
+    def __init__(self, base_fee: int, number: int, gas_limit: int, coinbase: EVMAddress, timestamp: int, difficulty: int):
 
-        self._base_fee = None
-        self._number = None
-        self._gas_limit = None
-        self._coinbase = None
-        self._timestamp = None
-        self._difficulty = None
+        self._base_fee = base_fee
+        self._number = number
+        self._gas_limit = gas_limit
+        self._coinbase = coinbase
+        self._timestamp = timestamp
+        self._difficulty = difficulty
 
-    def get_base_fee(self):
+    def get_base_fee(self) -> U256:
 
-        return self._base_fee
+        return U256(self._base_fee)
 
-    def get_number(self):
+    def get_number(self) -> U256:
 
-        return self._number
+        return U256(self._number)
 
-    def get_gas_limit(self):
+    def get_gas_limit(self) -> U256:
 
-        return self._gas_limit
+        return U256(self._gas_limit)
 
-    def get_coinbase(self):
+    def get_coinbase(self) -> EVMAddress:
 
         return self._coinbase
 
-    def get_timestamp(self):
+    def get_timestamp(self) -> U256:
 
-        return self._timestamp
+        return U256(self._timestamp)
 
-    def get_difficulty(self):
+    def get_difficulty(self) -> U256:
 
-        return self._difficulty
+        return U256(self._difficulty)
 

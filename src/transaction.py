@@ -2,13 +2,14 @@
 Module containing the transaction/message classes for the EVM
 """
 from utils.u256 import *
+from utils.address import EVMAddress
 
 class EVMTransaction():
     """
     Values should be immutable
     """
 
-    def __init__(self):
+    def __init__(self, tx_type: int, gas_price: int, gas_limit: int, origin: EVMAddress):
 
         self._tx_type = None
         self._nonce = None
@@ -41,7 +42,7 @@ class EVMMessage():
     """
     Values can mutate between internal transactions
     """
-    def __init__(self):
+    def __init__(self, data: str, sig: str, value: int, recipient: EVMAddress):
 
         # Data passed with message (HEX)
         self._data = None
@@ -53,9 +54,7 @@ class EVMMessage():
         self._value = None
         # Contract whose code will be executed
         self._recipient = None
-        # Whether recipient is an EOA or not
-        self._is_eoa = None
-
+        
     def get_data(self):
         """
         Returns message data in its entirety
@@ -77,10 +76,6 @@ class EVMMessage():
     def get_recipient(self):
 
         return self._recipient
-
-    def get_is_eoa(self):
-
-        return self._is_eoa
 
     def load_data(self, i: U256) -> U256:
         """
@@ -105,4 +100,8 @@ class EVMMessage():
         """
         Returns size of message data in bytes
         """
+        pass
+
+    def load_data_custom(self, offset: U256, length: U256) -> str:
+
         pass

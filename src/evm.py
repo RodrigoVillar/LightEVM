@@ -10,47 +10,68 @@ from transaction import EVMMessage, EVMTransaction
 from block import EVMBlock
 from state import EVMGlobalState, EVMStorage
 from bytecode import EVMInstruction, EVMRom
+from utils.input import EVMInput
+from utils.address import EVMAddress
 
-class EVMInput():
 
-    def initialize_from_toml(self, toml_dict: dict):
+class EVMReturnFrame():
 
-        self._chain_id = toml_dict["chain"]["chain_id"]
-        self._timestamp = toml_dict["block"]["timestamp"]
-        self._difficulty = toml_dict["block"]["difficulty"]
+    pass
 
 class EVM():
 
     def __init__(self, input: EVMInput):
 
+        # Stack empty at initialization
         self._stack = EVMStack()
+        # Memory empty at initialization
         self._memory = EVMMemory()
+        # Program Counter
         self._pc = 0
-        self._storage = EVMStorage()
-        self._gas = 0
-        # Maps integers to instructions
-        self._rom = EVMRom("")
+        # Storage derived from input
+        self._storage = input.get_storage()
+        # Gas limit derived from input
+        self._gas = input.get_tx_gas_limit()
+        # Bytecode derived from input
+        self._rom = EVMRom(
+            self._storage.get_contract_bytecode(input.get_to())
+            )
+
         self._stop = False
 
-        self._tx = EVMTransaction()
+        self._tx = EVMTransaction(
+            input.get_tx_type(),
+            input.get_gas_price(),
+            input.get_tx_gas_limit(),
+            input.get_from()
+        )
 
-        self._msg = EVMMessage()
+        self._msg = EVMMessage(
+            input.get_calldata(),
+            input.get_signature(),
+            input.get_value(),
+            input.get_to()
+        )
 
-        self._next_insn_slot = 0
+        self._current_block = EVMBlock(
+            input.get_base_fee(),
+            input.get_block_number(),
+            input.get_block_gas_limit(),
+            input.get_coinbase(), 
+            input.get_timestamp(),
+            input.get_difficulty()
+        )
 
-        self._current_block = EVMBlock()
+        self._state = EVMGlobalState(
+            input.get_chain_id()
+        )
 
-        self._state = EVMGlobalState()
-
-    def insert_insn(self, insn: EVMInstruction):
-
-        self._rom[self._next_insn_slot] = insn
-        self._next_insn_slot += insn.get_len()
+        self._return_data = ""
 
     def print_rom(self):
 
         print("EVM ROM:")
-        for i in range(self._next_insn_slot):
+        for i in range(self._rom.get_size()):
             try:
                 print(f"[{hex(i)}] {str(self._rom[i])}")
             except:
@@ -86,47 +107,12 @@ class EVM():
             print(f"Current Gas: {self._gas}")
             self.execute_insn(insn)
 
-def initialize_from_toml(evm: EVM, toml: dict):
-
-    pass
-
 class EVMInterpreter():
 
-    def __init__(self, toml_dict = None):
+    def __init__(self, input: EVMInput):
 
-        self._evm = EVM(100000)
-        if toml_dict != None:
-            initialize_from_toml(self._evm)
-
-
-    def interpret(self, bytecode: str):
-
-        while len(bytecode) != 0:
-            op = bytecode[:2].upper()
-            readable_op = EVMOpcodes.get_readable_opcode(op)
-            if op in EVMOpcodes.push_opcodes:
-                chars_selected = int(readable_op[4:]) * 2
-                metadata = bytecode[2:2 + chars_selected]
-                insn = EVMInstruction(op, readable_op, metadata) 
-                bytecode = bytecode[2 + chars_selected:]   
-            elif op in EVMOpcodes.dup_opcodes:
-                metadata = int(readable_op[3:])
-                insn = EVMInstruction(op, readable_op, metadata)
-                bytecode = bytecode[2:]
-            elif op in EVMOpcodes.swap_opcodes:
-                metadata = int(readable_op[4:])
-                insn = EVMInstruction(op, readable_op, metadata)
-                bytecode = bytecode[2:]
-            else:
-                insn = EVMInstruction(op, readable_op)
-                bytecode = bytecode[2:]
-
-            self._evm.insert_insn(insn)
+        self._evm = EVM(input)
 
     def run_evm(self):
 
         self._evm.run()
-
-    def print_state(self):
-
-        self._evm.print_rom()

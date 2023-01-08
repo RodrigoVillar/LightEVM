@@ -11,11 +11,11 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
     If charging for EXP operation, metadata is the number of bits of the
     exponent
     
-    If charging for SHA3 operation, metadata is the word size of the value being
-    hashed
+    If charging for SHA3 operation, metadata is a dictionary with the following
+    keys: data_size_words, mem_expansion_cost
     
-    If charging for BALANCE, EXTCODESIZE, or EXTCODEHASH, metadata is a boolean
-    representing whether the address being accessed is touched 
+    If charging for CALLDATA, CODECOPY, or RETURNDATACOPY operation, then metadata is a dictionary with the following
+    keys: data_size_words, mem_expansion_cost
     """
 
     insn = insn.upper()
@@ -45,8 +45,8 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
 
         elif insn == "20": # SHA3 OPERATION
 
-            gas_cost = 30 + (6 * metadata)
-            
+            gas_cost = 30 + 6 * metadata["data_size_words"] + metadata["mem_expansion_cost"]
+
             if evm._gas - gas_cost < 0:
 
                 raise EVMInsufficientGas()
@@ -55,7 +55,13 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
 
         elif insn == "37": # CALLDATACOPY
 
-            pass
+            gas_cost = 3 + (3 * metadata["data_size_words"]) + metadata["mem_expansion_cost"]
+
+            if evm._gas - gas_cost < 0:
+
+                raise EVMInsufficientGas()
+
+            evm._gas -= gas_cost
 
         elif insn == "39": # CODECOPY
 

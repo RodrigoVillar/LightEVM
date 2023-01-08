@@ -10,6 +10,7 @@ from u256 import U256
 from gas import charge_gas
 from hashing import keccak256
 from exceptions import *
+from data import EVMMemoryReturnValue
 
 def stop(evm: EVM):
 
@@ -277,7 +278,9 @@ def sha3(evm: EVM):
     # Get value from memory
     value = evm._memory.load_custom(offset, length)
 
-    word_len = (len(value) + 1) // 2 
+    # Every two chars is a byte
+    value_byte_len = len(value.get_value()) // 2
+    value_word_len = (value_byte_len + 31) // 32 
 
     hashed_value = keccak256(hex = value)
 
@@ -287,7 +290,14 @@ def sha3(evm: EVM):
 
     evm._pc += 1
 
-    charge_gas(evm, "20")
+    charge_gas(
+        evm, 
+        "20", 
+        {
+            "data_size_words": value_word_len,
+            "mem_expansion_cost": value.get_mem_expansion_cost()
+        }
+    )
 
 def address(evm: EVM):
 
@@ -365,7 +375,26 @@ def calldatasize(evm: EVM):
 
 def calldatacopy(evm: EVM):
 
-    pass
+    destOffset = evm._stack.pop()
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+    
+    data = evm._msg.load_data_custom(offset, length)
+
+    return_value = evm._memory.store_custom(destOffset, length, data)
+
+    words = (length.to_int() + 31) // 32
+
+    evm._pc += 1
+
+    charge_gas(
+        evm, 
+        "37",
+        {
+            words,
+            return_value.get_mem_expansion_cost()
+        }
+        )
 
 def codesize(evm: EVM):
 
@@ -379,7 +408,26 @@ def codesize(evm: EVM):
 
 def codecopy(evm: EVM):
     
-    pass
+    destOffset = evm._stack.pop()
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+
+    code = evm._rom.get_code(offset, length)
+
+    return_val = evm._memory.store_custom(destOffset, length, code)
+
+    words = (length.to_int() + 31) // 32
+
+    evm._pc += 1
+
+    charge_gas(
+        evm,
+        "39",
+        {
+            "data_size_words": words,
+            "mem_expansion_cost": return_val.get_mem_expansion_cost()
+        }
+    )
 
 def gasprice(evm: EVM):
 
@@ -477,38 +525,15 @@ def pop(evm: EVM):
 
 def mload(evm: EVM):
 
-    offset = evm._stack.pop()
-    evm._stack.push(
-        evm._memory.load(offset)
-    )
-
-    evm._pc += 1
-
-    charge_gas(evm, "51")
+    pass
 
 def mstore(evm: EVM):
 
-    offset = evm._stack.pop()
-    value = evm._stack.pop()
-
-    evm._memory.store(offset, value)
-
-    evm._pc += 1
-
-    charge_gas(evm, "52")
+    pass
 
 def mstore8(evm: EVM):
 
-    offset = evm._stack.pop()
-    value = evm._stack.pop()
-
-    offset = U256.bitwise_and(offset, U256(255))
-
-    evm._memory.store(offset, value)
-
-    evm._pc += 1
-
-    charge_gas(evm, "53")
+    pass
 
 def sload(evm: EVM):
 

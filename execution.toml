@@ -4,15 +4,44 @@
 chain_id = 1
 
 [block]
+# UNIX TIME
 timestamp = 0
 difficulty = 0
+# Max Gas for block
 gas_limit = 0
+# Base fee in Wei
 base_fee = 0
+# Block number
+number = 0
+# Miner's Address
+coinbase = ""
 
 [transaction]
+# From Address
 from = ""
+# To Address
 to = ""
+# Transaction Data 
 calldata = ""
+# Value (in Wei)
 value = 0
+# Max gas to be used in TX
 gas_limit = 0
+# Max wei per unit of gas
 gas_price = 0
+# If the transaction is only transfering ETH
+is_transfer_only = true
+# Transaction type
+type = 0
+# Signature
+sig = ""
+
+[[contracts]]
+address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+bytecode = ""
+balance = 0
+nonce = 0
+
+[contracts.slots]
+0 = 40
+1 = 32

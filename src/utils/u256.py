@@ -393,3 +393,29 @@ class U256:
         """
         pass
 
+    @staticmethod
+    def to_address_hex(address) -> str:
+        """
+        Use only if value is within range of [0, 2**160 - 1]
+        """
+        if not isinstance(address, U256):
+
+            raise Exception("arg is not of type U256!")
+
+        hex_str = hex(address.to_int())
+        # Remove prefix
+        hex_str = hex_str[2:]
+        # Check length
+        hex_str_len = len(hex_str)
+        # How many zeros to prepend if necessary
+        preprend_len = 40 - hex_str_len
+        for i in range(preprend_len):
+            hex_str = "0" + hex_str
+
+        return hex_str
+
+    @staticmethod
+    def from_hex(hex: str):
+
+        hex_int = int(hex, 16)
+        return U256(hex_int)
