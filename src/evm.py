@@ -16,7 +16,31 @@ from utils.address import EVMAddress
 
 class EVMReturnFrame():
 
-    pass
+    def __init__(self):
+
+        self._return_data = ""
+
+class EVMReturnData():
+
+    def __init__(self, data: str):
+
+        self._data = data
+
+    def get_data(self) -> str:
+
+        return self._data
+
+    def get_data_custom(self, offset: U256, length: U256) -> str:
+
+        offset_val = offset.to_int()
+        length_val = length.to_int()
+
+        result = ""
+
+        for i in range(length_val):
+            result = result + self._data[offset + (i * 2): offset + (i * 2) + 2]
+
+        return result
 
 class EVM():
 
@@ -66,7 +90,7 @@ class EVM():
             input.get_chain_id()
         )
 
-        self._return_data = ""
+        self._return_data = EVMReturnData("")
 
     def print_rom(self):
 

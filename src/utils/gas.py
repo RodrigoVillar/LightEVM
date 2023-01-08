@@ -16,6 +16,12 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
     
     If charging for CALLDATA, CODECOPY, or RETURNDATACOPY operation, then metadata is a dictionary with the following
     keys: data_size_words, mem_expansion_cost
+
+    If charging for BALANCE, EXTCODESIZE, or EXTCODEHASH, then metadata is a
+    boolean representing whether if the address was touched or not
+
+    If charging for EXTCODECOPY, then metadata is a dict with the following
+    keys: is_touched, data_size_words, mem_expansion_cost
     """
 
     insn = insn.upper()

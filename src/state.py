@@ -25,14 +25,25 @@ class EVMContractStorage():
             """
             Slots maps ints to U256 values
             """
+            bytecode = bytecode.lower() 
+            if bytecode[:2] == "0x":
+
+                bytecode = bytecode[2:]
+
             self._bytecode = bytecode
             self._slots = slots
 
-        def get_bytecode(self):
+        def get_bytecode(self) -> str:
 
             return self._bytecode
 
-        def get_slot_value(self, key: int):
+        def get_bytecode_size(self) -> U256:
+
+            size = len(self._bytecode) // 2
+
+            return U256(size)
+
+        def get_slot_value(self, key: int) -> U256:
 
             if key not in self._slots:
 
@@ -43,6 +54,19 @@ class EVMContractStorage():
         def set_slot_value(self, key: int, value: U256):
 
             self._slots[key] = value
+
+        def get_bytecode_custom(self, offset: U256, length: U256) -> str:
+
+            offset_val = offset.to_int()
+            length_val = length.to_int()
+
+            result = ""
+
+            for i in range(length_val):
+
+                result = result + self._bytecode[offset_val + (i * 2): offset_val + (i * 2) + 2]
+
+            return result
 
 class EVMStorageMap():
 
@@ -125,6 +149,22 @@ class EVMStorageMap():
         
         return self._balance_mapping[address.get_hex()]
 
+    def get_contract_bytecode_size(self, address: EVMAddress) -> U256:
+
+        if address.get_hex() not in self._balance_mapping:
+
+            self.grab_contract(address)
+        
+        return self._contract_mapping[address.get_hex()].get_bytecode_size()
+
+    def get_contract_bytecode_custom(self, address: EVMAddress, offset: U256, length: U256) -> str:
+
+        if address.get_hex() not in self._balance_mapping:
+
+            self.grab_contract(address)
+        
+        return self._contract_mapping[address.get_hex()].get_bytecode_custom(offset, length)
+
 class EVMAccessMap():
     """
     Class that incorporates the accessed addresses and the accessed storage
@@ -181,11 +221,23 @@ class EVMStorage():
         self._storage_map = EVMStorageMap(block_number)
 
     def load(self, address: EVMAddress, slot: U256) -> U256:
+
+        is_touched = self._access_map.is_storage_slot_touched(address, slot)
+
+        if not is_touched:
+
+            self._access_map.add_touched_storage_slot(address, slot)
         
         return self._storage_map.get_slot_value(address, slot)
 
     def store(self, address: EVMAddress, slot: U256, slot_value: U256):
-        
+        # NEED TO EVENTUALLY IMPLEMENT GAS REFUNDS
+        is_touched = self._access_map.is_storage_slot_touched(address, slot)
+
+        if not is_touched:
+
+            self._access_map.add_touched_storage_slot(address, slot)
+
         self._storage_map.set_slot_value(address, slot, slot_value)
     
     def is_address_touched(self, address: EVMAddress):
@@ -198,11 +250,17 @@ class EVMStorage():
 
     def get_contract_bytecode(self, address: EVMAddress) -> str:
 
+        is_touched = self._access_map.is_address_touched(address)
+
+        if not is_touched:
+
+            self._access_map.add_touched_address(address)
+
         return self._storage_map.get_contract_bytecode(address)
 
     def add_touched_address(self, address: EVMAddress):
         """
-        Should only be used to add tx.sender and tx.to
+        Front facing function to add touched addresses
         """
         self._access_map.add_touched_address(address)
 
@@ -213,3 +271,23 @@ class EVMStorage():
     def add_contract(self, address: EVMAddress, data: EVMContractStorage, balance: U256):
 
         self._storage_map.add_contract(address, data, balance)
+
+    def get_contract_bytecode_size(self, address: EVMAddress) -> U256:
+
+        is_touched = self._access_map.is_address_touched(address)
+
+        if not is_touched:
+
+            self._access_map.add_touched_address(address)
+
+        return self._storage_map.get_contract_bytecode_size(address)
+
+    def get_contract_bytecode_custom(self, address: EVMAddress, offset: U256, length: U256):
+
+        is_touched = self._access_map.is_address_touched(address)
+
+        if not is_touched:
+
+            self._access_map.add_touched_address(address)
+
+        return self._storage_map.get_contract_bytecode_custom(address, offset, length)

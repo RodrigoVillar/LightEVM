@@ -11,6 +11,7 @@ from gas import charge_gas
 from hashing import keccak256
 from exceptions import *
 from data import EVMMemoryReturnValue
+from utils.address import EVMAddress
 
 def stop(evm: EVM):
 
@@ -441,19 +442,80 @@ def gasprice(evm: EVM):
 
 def extcodesize(evm: EVM):
 
-    pass
+    address = EVMAddress(evm._stack.pop())
+
+    is_touched = evm._storage.is_address_touched(address)
+
+    size = evm._storage.get_contract_bytecode_size(address)
+
+    evm._stack.push(size)
+
+    evm._pc += 1
+
+    charge_gas(evm, "3B", is_touched)
+
 
 def extcodecopy(evm: EVM):
 
-    pass
+    address = EVMAddress(evm._stack.pop())
+    destOffset = evm._stack.pop()
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+
+    is_touched = evm._storage.is_address_touched(address)
+
+    code = evm._storage.get_contract_bytecode_custom(address, offset, length)
+
+    code_len = len(code) // 2 # Bytes
+    data_size_words = (code_len + 31) // 32
+
+    return_val = evm._memory.store_custom(destOffset, length, code)
+
+    evm._pc += 1
+
+    charge_gas(
+        evm, 
+        "3C", 
+        {
+            "is_touched": is_touched,
+            "data_size_words": data_size_words,
+            "mem_expansion_cost": return_val.get_mem_expansion_cost()
+        }
+    )
 
 def returndatasize(evm: EVM):
 
-    pass
+    evm._stack.push(
+        U256(len(evm._return_data.get_data()))
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "3D")
 
 def returndatacopy(evm: EVM):
 
-    pass
+    destOffset = evm._stack.pop()
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+
+    data = evm._return_data.get_data_custom(offset, length)
+
+    data_size = len(data) // 2
+    data_word_size = (data_size + 31) // 32
+
+    return_val = evm._memory.store_custom(destOffset, length, data)
+
+    evm._pc += 1
+
+    charge_gas(
+        evm, 
+        "3E", 
+        {
+            "data_size_words": data_word_size,
+            "mem_expansion_cost": return_val.get_mem_expansion_cost()
+        }
+        )
 
 def extcodehash(evm: EVM):
 
