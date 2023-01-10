@@ -56,6 +56,10 @@ class EVM():
         self._storage = input.get_storage()
         # Gas limit derived from input
         self._gas = input.get_tx_gas_limit()
+        # Gas refund
+        self._gas_refund = 0
+        # Log Storage
+        self._log_storage = input.get_log_storage()
         # Bytecode derived from input
         self._rom = EVMRom(
             self._storage.get_contract_bytecode(input.get_to())
@@ -91,6 +95,16 @@ class EVM():
         )
 
         self._return_data = EVMReturnData("")
+
+        self._frame_number = input.get_frame_number()
+
+        # Add to, from addresses to touched addresses
+        self._storage.add_touched_address(
+            EVMAddress(hex=self._msg.get_sender())
+            )
+        self._storage.add_touched_address(
+            EVMAddress(hexs=self._msg.get_recipient())
+        )
 
     def print_rom(self):
 

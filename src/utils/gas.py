@@ -2,6 +2,11 @@
 from utils.exceptions import *
 from evm import EVM
 
+def sstore_gas_check(evm: EVM):
+
+    if evm._gas <= 2300:
+
+        raise EVMInsufficientGas()
 
 def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
     """
@@ -22,6 +27,12 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
 
     If charging for EXTCODECOPY, then metadata is a dict with the following
     keys: is_touched, data_size_words, mem_expansion_cost
+
+    If charging for SSTORE operation, then metadata is a dict with the following
+    keys: gas_cost, gas_refund, is_touched
+
+    If charging for SLOAD operation, then metadata is a boolean representing
+    whether the storage slot was touched or not
     """
 
     insn = insn.upper()
@@ -78,6 +89,14 @@ def charge_gas(evm: EVM, insn: str, metadata = None) -> int:
             pass
 
         elif insn == "55": # SSTORE
+
+            pass
+
+        elif insn == "PUSH":
+
+            pass
+
+        elif insn == "DUP":
 
             pass
 

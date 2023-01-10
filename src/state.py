@@ -5,6 +5,7 @@ from utils.u256 import *
 from utils.address import *
 from dotenv import dotenv_values    
 from web3 import Web3
+from copy import deepcopy
 
 class EVMGlobalState():
     """
@@ -30,8 +31,28 @@ class EVMContractStorage():
 
                 bytecode = bytecode[2:]
 
-            self._bytecode = bytecode
-            self._slots = slots
+            self._bytecode: str = bytecode
+            self._slots: dict[int: U256] = slots
+            # Copy of original self._slots, immutable
+            self._immutable_slots: dict[int, U256] = slots.deepcopy()
+
+        def add_modified_slot(self, frame_number: int, slot: U256):
+
+            if frame_number not in self._modified_slots:
+
+                self._modified_slots[frame_number] = set()
+
+            self._modified_slots[frame_number].add(slot.to_int())
+
+        def reset_modified_slots(self, frame_number: int):
+            """
+            To be called at the end of every EVM execution context
+            """
+            if frame_number not in self._modified_slots:
+
+                return
+
+            self._modified_slots[frame_number].clear()
 
         def get_bytecode(self) -> str:
 
@@ -50,6 +71,14 @@ class EVMContractStorage():
                 return U256(0)
 
             return self._slots[key]
+
+        def get_imumutable_slot_value(self, key: int) -> U256:
+
+            if key not in self._immutable_slots:
+
+                return U256(0)
+
+            return self._immutable_slots[key]
 
         def set_slot_value(self, key: int, value: U256):
 
@@ -73,7 +102,7 @@ class EVMStorageMap():
     def __init__(self, block_number: int):
 
         # Maps contract addresses to contract storage objects
-        self._contract_mapping = {}
+        self._contract_mapping: dict[str: EVMContractStorage] = {}
         # Maps contract address to U256 values representing balances
         self._balance_mapping = {}
 
@@ -95,7 +124,7 @@ class EVMStorageMap():
         balance = int(self._w3.eth.get_balance(address.get_hex_with_prefix(), self._block_number))
 
         # Maps keys to values, int to U256
-        slot_map = {}
+        slot_map: dict[int: U256] = {}
 
         zero_counter = 0
         slot_counter = 0
@@ -133,6 +162,14 @@ class EVMStorageMap():
 
         return self._contract_mapping[address.get_hex()].get_slot_value(slot_key.to_int())
 
+    def get_immutable_slot_value(self, address: EVMAddress, slot_key: U256) -> U256:
+
+        if address.get_hex() not in self._contract_mapping:
+
+            self.grab_contract(address)
+
+        return self._contract_mapping[address.get_hex()].get_imumutable_slot_value(slot_key.to_int())
+
     def get_contract_bytecode(self, address: EVMAddress) -> str:
 
         if address.get_hex() not in self._contract_mapping:
@@ -165,6 +202,14 @@ class EVMStorageMap():
         
         return self._contract_mapping[address.get_hex()].get_bytecode_custom(offset, length)
 
+    def is_slot_modified(self, address: EVMAddress, frame_number: int, slot: U256):
+
+        if address.get_hex() not in self._contract_mapping:
+
+            self.grab_contract(address)
+
+        return self._contract_mapping[address.get_hex()].is_slot_modified()
+
 class EVMAccessMap():
     """
     Class that incorporates the accessed addresses and the accessed storage
@@ -190,11 +235,11 @@ class EVMAccessMap():
 
         self._touched_storage_slots[address.get_hex()].add(key.to_int())
 
-    def is_address_touched(self, address: EVMAddress):
+    def is_address_touched(self, address: EVMAddress) -> bool:
 
         return address.get_hex() in self._touched_addresses
 
-    def is_storage_slot_touched(self, address: EVMAddress, key: U256):
+    def is_storage_slot_touched(self, address: EVMAddress, key: U256) -> bool:
 
         try:
             return key.to_int() in self._touched_storage_slots[address.get_hex()]
@@ -238,13 +283,20 @@ class EVMStorage():
 
             self._access_map.add_touched_storage_slot(address, slot)
 
+        # Also need to add contract to touched addresses if not already 
+        is_address_touched = self._access_map.is_address_touched(address)
+
+        if not is_address_touched:
+
+            self._access_map.add_touched_address(address)
+
         self._storage_map.set_slot_value(address, slot, slot_value)
     
-    def is_address_touched(self, address: EVMAddress):
+    def is_address_touched(self, address: EVMAddress) -> bool:
 
         return self._access_map.is_address_touched(address)
 
-    def is_storage_slot_touched(self, address: EVMAddress, slot_key: U256):
+    def is_storage_slot_touched(self, address: EVMAddress, slot_key: U256) -> bool:
 
         return self._access_map.is_storage_slot_touched()
 
@@ -291,3 +343,17 @@ class EVMStorage():
             self._access_map.add_touched_address(address)
 
         return self._storage_map.get_contract_bytecode_custom(address, offset, length)
+
+    def get_contract_balance(self, address: EVMAddress):
+
+        is_touched = self._access_map.is_address_touched(address)
+
+        if not is_touched:
+
+            self._access_map.add_touched_address(address)
+
+        return self._storage_map.get_contract_balance()
+
+    def load_immutable(self, address: EVMAddress, key: U256):
+
+        return self._storage_map.get_immutable_slot_value(address, key)

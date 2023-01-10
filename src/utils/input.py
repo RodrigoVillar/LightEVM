@@ -5,6 +5,7 @@ Module containing the EVM Input class
 from ..state import EVMStorage, EVMContractStorage
 from utils.address import EVMAddress
 from utils.u256 import U256
+from logs import EVMLogStorage
 
 class EVMInput():
 
@@ -33,6 +34,7 @@ class EVMInput():
         self._signature = toml_dict["transaction"]["sig"]
 
         self._storage = EVMStorage()
+        self._log_storage = EVMLogStorage()
 
         if "contracts" in toml_dict:
 
@@ -46,6 +48,24 @@ class EVMInput():
 
                 contract_storage = EVMContractStorage(contract["bytecode"], formatted_slots)
                 self._storage.add_contract(EVMAddress(hex=contract["address"]), contract_storage, U256(contract["balance"]))
+
+        self._frame_number = 0
+
+    def get_log_storage(self) -> EVMLogStorage:
+
+        return self._log_storage
+
+    def set_log_storage(self, log_storage: EVMLogStorage):
+
+        self._log_storage = log_storage
+
+    def get_frame_number(self) -> int:
+
+        return self._frame_number
+
+    def set_frame_number(self, frame_number: int):
+
+        self._frame_number = frame_number
 
     def set_chain_id(self, id):
 

@@ -7,11 +7,12 @@ gas
 
 from evm import EVM, EVMInstruction
 from u256 import U256
-from gas import charge_gas
+from gas import charge_gas, sstore_gas_check
 from hashing import keccak256
 from exceptions import *
 from data import EVMMemoryReturnValue
 from utils.address import EVMAddress
+from ..logs import EVMLog
 
 def stop(evm: EVM):
 
@@ -314,13 +315,15 @@ def balance(evm: EVM):
 
     address = evm._stack.pop()
 
+    is_touched = evm._storage.is_address_touched(EVMAddress(uint=address))
+
     evm._stack.push(
-        evm._state.get_account_balance(address)
+        evm._storage.get_contract_balance(EVMAddress(uint=address))
     )
 
     evm._pc += 1
 
-    charge_gas(evm, "31")
+    charge_gas(evm, "31", is_touched)
 
 def origin(evm: EVM):
 
@@ -533,6 +536,8 @@ def coinbase(evm: EVM):
 
     evm._pc += 1
 
+    charge_gas(evm, "41")
+
 def timestamp(evm: EVM):
 
     evm._stack.push(
@@ -540,6 +545,8 @@ def timestamp(evm: EVM):
     )
 
     evm._pc += 1
+
+    charge_gas(evm, "42")
 
 def number(evm: EVM):
 
@@ -549,6 +556,8 @@ def number(evm: EVM):
 
     evm._pc += 1
 
+    charge_gas(evm, "43")
+
 def difficulty(evm: EVM):
 
     evm._stack.push(
@@ -556,6 +565,8 @@ def difficulty(evm: EVM):
     )
 
     evm._pc += 1
+
+    charge_gas(evm, "44")
 
 def gaslimit(evm: EVM):
 
@@ -565,17 +576,40 @@ def gaslimit(evm: EVM):
 
     evm._pc += 1
 
+    charge_gas(evm, "45")
+
 def chainid(evm: EVM):
 
-    pass
+    evm._stack.push(
+        U256(evm._state.get_chain_id())
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "46")
 
 def selfbalance(evm: EVM):
 
-    pass
+    # Don't need to check for touched addresses since executing contract's
+    # addresses is already added during EVM initialization
+
+    evm._stack.push(
+        evm._storage.get_contract_balance(evm._msg.get_recipient())
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "47")
 
 def basefee(evm: EVM):
 
-    pass
+    evm._stack.push(
+        evm._current_block.get_base_fee()
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "48")
 
 def pop(evm: EVM):
 
@@ -587,23 +621,125 @@ def pop(evm: EVM):
 
 def mload(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+
+    return_val = evm._memory.load(offset)
+
+    evm._pc += 1
+
+    charge_gas(evm, "51", return_val.get_mem_expansion_cost())
 
 def mstore(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    value = evm._stack.pop()
+
+    return_val = evm._memory.store(offset, value)
+
+    evm._pc += 1
+
+    charge_gas(evm, "52", return_val.get_mem_expansion_cost())
 
 def mstore8(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    value = evm._stack.pop()
+
+    value = U256.bitwise_and(value, U256(255))
+
+    return_val = evm._memory.store(offset, value)
+
+    evm._pc += 1
+
+    charge_gas(evm, "53", return_val.get_mem_expansion_cost())
 
 def sload(evm: EVM):
 
-    pass
+    key = evm._stack.pop()
+
+    is_slot_touched = evm._storage.is_storage_slot_touched(evm._msg.get_recipient())
+
+    value = evm._storage.load(
+        evm._msg.get_recipient(),
+        key
+    )
+
+    evm._stack.push(value)
+
+    evm._pc += 1
+
+    charge_gas(evm, "54", is_slot_touched)
 
 def sstore(evm: EVM):
+    """
+    Perhaps the most difficult operation in terms of gas...
+    """
+    key = evm._stack.pop()
+    new_value = evm._stack.pop()
 
-    pass
+    original_value = evm._storage.load_immutable(
+        evm._msg.get_recipient(),
+        key
+    )
+    current_value = evm._storage.load(
+        evm._msg.get_recipient(),
+        key
+    )
+
+    gas_cost = 0
+    gas_refund = 0
+
+    sstore_gas_check(evm)
+
+    is_slot_touched = evm._storage.is_storage_slot_touched(
+        evm._msg.get_recipient(),
+        key
+    )
+
+    if not is_slot_touched:
+
+        gas_cost += 2100
+
+    if new_value.to_int() == current_value.to_int():
+        gas_cost += 100
+    else: # new_value != current_value
+        if current_value.to_int() == original_value.to_int():
+            if original_value.to_int() == 0:
+                gas_cost += 20000
+            else: # original_value != 0
+                gas_cost += 2900
+                if new_value.to_int() == 0:
+                    gas_refund += 4800
+        else: # current_value != original value
+            gas_cost += 100
+            if original_value.to_int() != 0:
+                if current_value.to_int() == 0:
+                    gas_refund -= 4800
+                elif new_value.to_int() == 0:
+                    gas_refund += 4800
+            if new_value.to_int() == original_value.to_int():
+                if original_value.to_int() == 0:
+                    gas_refund += 19900
+                else: # original_value != 0
+                    gas_refund += 2800
+
+    evm._storage.store(
+        evm._msg.get_recipient(),
+        key, 
+        new_value
+    )
+
+    evm._pc += 1
+
+    charge_gas(
+        evm, 
+        "55", 
+        {
+            "gas_cost": gas_cost,
+            "gas_refund": gas_refund,
+            "is_touched": is_slot_touched
+        }
+        )
 
 def jump(evm: EVM):
 
@@ -638,7 +774,7 @@ def jumpi(evm: EVM):
 def pc(evm: EVM):
 
     evm._stack.push(
-        evm._pc
+        U256(evm._pc)
     )
 
     evm._pc += 1
@@ -647,47 +783,172 @@ def pc(evm: EVM):
 
 def msize(evm: EVM):
 
-    pass
+    evm._stack.push(
+        evm._memory.get_size()
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "59")
 
 def gas(evm: EVM):
 
-    pass
+    evm._stack.push(
+        U256(evm._gas)
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "5A")
 
 def jumpdest(evm: EVM):
 
-    pass
+    evm._pc += 1
+    charge_gas(evm, "5B")
 
 def push(evm: EVM, bytes_to_push: int):
 
-    pass
+    evm._stack.push(
+        U256(bytes_to_push)
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "PUSH")
 
 def dup(evm: EVM, index_to_dup: int):
 
-    pass
+    dup_value = evm._stack.get_item(U256(index_to_dup))
+
+    evm._stack.push(
+        dup_value
+    )
+
+    evm._pc += 1
+
+    charge_gas(evm, "DUP")
 
 def swap(evm: EVM, index_to_swap: int):
 
-    pass
+    b = evm._stack.get_item(U256(index_to_swap))
+    a = evm._stack.pop()
+    
+    evm._stack.push(b)
+    evm._stack.insert(U256(index_to_swap), a)
+
+    evm._pc += 1
+
+    charge_gas(evm, "SWAP")
 
 def log0(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+
+    return_val = evm._memory.load_custom(offset, length)
+
+    log = EVMLog(
+        evm._msg.get_recipient(),
+        return_val.get_value()
+    )
+
+    evm._log_storage.add_log(log)
+
+    evm._pc += 1
+
+    charge_gas(evm , "A0", return_val.get_mem_expansion_cost())
 
 def log1(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+    topic0 = evm._stack.pop()
+
+    return_val = evm._memory.load_custom(offset, length)
+
+    log = EVMLog(
+        evm._msg.get_recipient(),
+        return_val.get_value(),
+        topic0=topic0.to_hex_string()
+        )
+
+    evm._log_storage.add_log(log)
+
+    evm._pc += 1
+
+    charge_gas(evm , "A0", return_val.get_mem_expansion_cost())
 
 def log2(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+    topic0 = evm._stack.pop()
+    topic1 = evm._stack.pop()
+
+    return_val = evm._memory.load_custom(offset, length)
+
+    log = EVMLog(
+        evm._msg.get_recipient(),
+        return_val.get_value(),
+        topic0=topic0.to_hex_string(),
+        topic1=topic1.to_hex_string()
+        )
+
+    evm._log_storage.add_log(log)
+
+    evm._pc += 1
+
+    charge_gas(evm , "A0", return_val.get_mem_expansion_cost())
 
 def log3(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+    topic0 = evm._stack.pop()
+    topic1 = evm._stack.pop()
+    topic2 = evm._stack.pop()
+
+    return_val = evm._memory.load_custom(offset, length)
+
+    log = EVMLog(
+        evm._msg.get_recipient(),
+        return_val.get_value(),
+        topic0=topic0.to_hex_string(),
+        topic1=topic1.to_hex_string(),
+        topic2=topic2.to_hex_string()
+        )
+
+    evm._log_storage.add_log(log)
+
+    evm._pc += 1
+
+    charge_gas(evm , "A0", return_val.get_mem_expansion_cost())
 
 def log4(evm: EVM):
 
-    pass
+    offset = evm._stack.pop()
+    length = evm._stack.pop()
+    topic0 = evm._stack.pop()
+    topic1 = evm._stack.pop()
+    topic2 = evm._stack.pop()
+    topic3 = evm._stack.pop()
+
+    return_val = evm._memory.load_custom(offset, length)
+
+    log = EVMLog(
+        evm._msg.get_recipient(),
+        return_val.get_value(),
+        topic0=topic0.to_hex_string(),
+        topic1=topic1.to_hex_string(),
+        topic2=topic2.to_hex_string(),
+        topic3=topic3.to_hex_string()
+        )
+
+    evm._log_storage.add_log(log)
+
+    evm._pc += 1
+
+    charge_gas(evm , "A0", return_val.get_mem_expansion_cost())
 
 def create(evm: EVM):
 

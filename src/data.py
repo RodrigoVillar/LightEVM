@@ -4,6 +4,7 @@ Module containg the stack and memory data structures for the EVM
 from utils.u256 import *
 from EVMErrors import *
 from math import floor
+from copy import deepcopy
 
 class EVMMemoryReturnValue():
     """
@@ -57,6 +58,10 @@ class EVMMemory():
         # (self._size + 31) // 32
         self._size_words: int = 0
 
+    def get_size(self) -> U256:
+
+        return U256(self._size)
+
     def get_mem_cost(self) -> int:
         """
         Memory Expansion Function from the Ethereum Yellowpaper
@@ -82,7 +87,7 @@ class EVMMemory():
 
         farthest_address = offset_val + 31
 
-        if farthest_address > self._farthest_referenced_address:
+        if farthest_address > self._size:
             # Need to update farthest referenced address
             self._size = farthest_address
             self._size_words = (farthest_address + 31) // 32
@@ -116,7 +121,7 @@ class EVMMemory():
 
         farthest_address = offset_val + length.to_int() - 1
 
-        if farthest_address > self._farthest_address:
+        if farthest_address > self._size:
             
             self._size = farthest_address
             self._size_words = (farthest_address + 31) // 32
@@ -192,7 +197,7 @@ class EVMMemory():
 
         print("CURRENT EVM MEMORY:")
 
-        farthest_multiple = self._farthest_address % 32
+        farthest_multiple = self._size % 32
 
         for nth_word in range(farthest_multiple + 1):
 
@@ -244,7 +249,7 @@ class EVMStack():
             print(f"[{hex(counter)}] {self._stack[i]}")
             counter += 32
 
-    def get_item(self, index: U256):
+    def get_item(self, index: U256) -> U256:
 
         if index.to_int() > 1024:
             raise EVMOutsideStackBounds(index.to_int())
@@ -263,3 +268,7 @@ class EVMStack():
             raise EVMOutsideStackBounds(index.to_int())
 
         self._stack[index] = new_value
+
+    def insert(self, index: U256, value: U256):
+
+        pass
