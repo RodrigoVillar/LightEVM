@@ -2,7 +2,7 @@
 Module containing the EVM Input class
 """
 
-from ..state import EVMStorage, EVMContractStorage
+from state import EVMStorage, EVMContractStorage
 from utils.address import EVMAddress
 from utils.u256 import U256
 from logs import EVMLogStorage
@@ -23,9 +23,11 @@ class EVMInput():
         self._block_gas_limit = toml_dict["block"]["gas_limit"]
         self._base_fee = toml_dict["block"]["base_fee"]
         self._block_number = toml_dict["block"]["number"]
+        self._coinbase = toml_dict["block"]["coinbase"]
+
         # Transaction properties
-        self._from = EVMAddress(hex = toml_dict["transaction"]["from"])
-        self._to = EVMAddress(hex = toml_dict["transaction"]["to"])
+        self._from: EVMAddress = EVMAddress(hex = toml_dict["transaction"]["from"])
+        self._to: EVMAddress = EVMAddress(hex = toml_dict["transaction"]["to"])
         self._calldata = toml_dict["transaction"]["calldata"]
         self._value = toml_dict["transaction"]["value"]
         self._tx_gas_limit = toml_dict["transaction"]["gas_limit"]
@@ -33,7 +35,7 @@ class EVMInput():
         self._type = toml_dict["transaction"]["type"]
         self._signature = toml_dict["transaction"]["sig"]
 
-        self._storage = EVMStorage()
+        self._storage = EVMStorage(self._block_number)
         self._log_storage = EVMLogStorage()
 
         if "contracts" in toml_dict:
@@ -87,11 +89,11 @@ class EVMInput():
 
         self._base_fee = base_fee
 
-    def set_from(self, from_addr) -> EVMAddress:
+    def set_from(self, from_addr: EVMAddress):
 
         self._from = from_addr
 
-    def set_to(self, to) -> EVMAddress:
+    def set_to(self, to: EVMAddress):
 
         self._to = to
 
@@ -135,11 +137,11 @@ class EVMInput():
 
         return self._base_fee
 
-    def get_from(self):
+    def get_from(self) -> EVMAddress:
 
         return self._from
 
-    def get_to(self):
+    def get_to(self) -> EVMAddress:
 
         return self._to
 

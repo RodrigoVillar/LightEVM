@@ -2,13 +2,13 @@
 Module containing the ROM and Instruction classes
 """
 
-import EVMOpcodes
 from utils.exceptions import *
 from utils.u256 import U256
+import utils.opcodes
 
 class EVMInstruction():
 
-    def __init__(self, hex: str, readable: str, metadata = None):
+    def __init__(self, hex: str, readable: str, metadata: str = None):
         self._hex_op = hex
         self._readable_op = readable
         # If PUSH operation, then metadata represents the data to push onto
@@ -46,21 +46,22 @@ class EVMRom():
 
         self._rom = {}
         self._size = 0
+        self._farthest_address = 0
 
         while len(bytecode) != 0:
 
             op = bytecode[:2].upper()
-            readable_op = EVMOpcodes.get_readable_opcode(op)
-            if op in EVMOpcodes.push_opcodes:
+            readable_op = utils.opcodes.get_readable_opcode(op)
+            if op in utils.opcodes.push_opcodes:
                 chars_selected = int(readable_op[4:]) * 2
                 metadata = bytecode[2:2 + chars_selected]
                 insn = EVMInstruction(op, readable_op, metadata) 
                 bytecode = bytecode[2 + chars_selected:]   
-            elif op in EVMOpcodes.dup_opcodes:
+            elif op in utils.opcodes.dup_opcodes:
                 metadata = int(readable_op[3:])
                 insn = EVMInstruction(op, readable_op, metadata)
                 bytecode = bytecode[2:]
-            elif op in EVMOpcodes.swap_opcodes:
+            elif op in utils.opcodes.swap_opcodes:
                 metadata = int(readable_op[4:])
                 insn = EVMInstruction(op, readable_op, metadata)
                 bytecode = bytecode[2:]
@@ -69,6 +70,7 @@ class EVMRom():
                 bytecode = bytecode[2:]
 
             self._rom[self._size] = insn
+            self._farthest_address = self._size
             self._size += insn.get_len()
 
     def get_insn(self, line: int) -> EVMInstruction:
@@ -84,7 +86,8 @@ class EVMRom():
 
     def is_end_of_program(self, pc : int) -> bool:
 
-        return self._size <= pc
+        print(f"size is :{self._size} while pc is {pc}")
+        return self._farthest_address < pc
 
     def get_code(self, offset: U256, length: U256) -> str:
 

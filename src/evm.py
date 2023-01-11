@@ -1,16 +1,13 @@
 """
 Module containining all EVM functionality
 """
-from EVMErrors import *
 from utils.u256 import *
-import EVMOpcodes
-from utils import operations
 from data import EVMMemory, EVMStack
 from transaction import EVMMessage, EVMTransaction
 from block import EVMBlock
 from state import EVMGlobalState, EVMStorage
-from bytecode import EVMInstruction, EVMRom
-from utils.input import EVMInput
+from bytecode import EVMRom
+from input import EVMInput
 from utils.address import EVMAddress
 
 
@@ -38,7 +35,7 @@ class EVMReturnData():
         result = ""
 
         for i in range(length_val):
-            result = result + self._data[offset + (i * 2): offset + (i * 2) + 2]
+            result = result + self._data[offset_val + (i * 2): offset_val + (i * 2) + 2]
 
         return result
 
@@ -76,6 +73,7 @@ class EVM():
 
         self._msg = EVMMessage(
             input.get_calldata(),
+            input.get_from(),
             input.get_signature(),
             input.get_value(),
             input.get_to()
@@ -100,11 +98,15 @@ class EVM():
 
         # Add to, from addresses to touched addresses
         self._storage.add_touched_address(
-            EVMAddress(hex=self._msg.get_sender())
+            self._msg.get_sender()
             )
         self._storage.add_touched_address(
-            EVMAddress(hexs=self._msg.get_recipient())
+            self._msg.get_recipient()
         )
+
+        self._gas -= 21000
+
+        print(self._gas)
 
     def print_rom(self):
 
@@ -123,34 +125,7 @@ class EVM():
 
         self._memory.print()
 
-    def execute_insn(self, insn: EVMInstruction):
+    def grab_insn(self):
 
-        operations.match_insn(self, insn)
+        return self._rom.get_insn(self._pc)
 
-        if self._rom.is_end_of_program(self._pc):
-            self._stop = True
-        self.print_stack()
-        self.print_memory()
-
-    def run(self):
-
-        # Deduct base gas fee of 21000
-        self._gas -= 21000
-
-        while not self._stop:
-            # Grab instruction from ROM
-            print(f"Current PC: [{self._pc}]")
-            insn = self._rom[self._pc]
-            print(f"Current Instruction: {insn}")
-            print(f"Current Gas: {self._gas}")
-            self.execute_insn(insn)
-
-class EVMInterpreter():
-
-    def __init__(self, input: EVMInput):
-
-        self._evm = EVM(input)
-
-    def run_evm(self):
-
-        self._evm.run()

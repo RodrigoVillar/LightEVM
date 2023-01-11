@@ -33,3 +33,15 @@ class EVMInvalidJumpDesination(Exception):
 class EVMUnkwownAccountType(Exception):
 
     pass
+
+class EVMStackOverFlow(Exception):
+
+    pass
+
+class EVMOutsideStackBounds(Exception):
+
+    pass
+
+class EVMUndefinedStackItem(Exception):
+
+    pass

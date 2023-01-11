@@ -2,7 +2,7 @@
 File containing the U256 class and its associated logic
 """
 
-from exceptions import *
+from utils.exceptions import *
 
 class U256:
 

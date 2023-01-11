@@ -42,12 +42,12 @@ class EVMMessage():
     """
     Values can mutate between internal transactions
     """
-    def __init__(self, data: str, sender: str, sig: str, value: int, recipient: EVMAddress):
+    def __init__(self, data: str, sender: EVMAddress, sig: str, value: int, recipient: EVMAddress):
 
         # Data passed with message (HEX)
         self._data = data
         # Sender of message
-        self._sender = str
+        self._sender = sender
         # Function selector
         self._sig = sig
         # Denominated in Wei
@@ -61,7 +61,7 @@ class EVMMessage():
         """
         return self._data
 
-    def get_sender(self) -> str:
+    def get_sender(self) -> EVMAddress:
 
         return self._sender
 
@@ -73,7 +73,7 @@ class EVMMessage():
 
         return self._value
 
-    def get_recipient(self):
+    def get_recipient(self) -> EVMAddress:
 
         return self._recipient
 

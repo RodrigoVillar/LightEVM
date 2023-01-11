@@ -1,11 +1,10 @@
 """
 Module containg the state class and the storage component of the EVM
 """
-from utils.u256 import *
-from utils.address import *
+from utils.u256 import U256
+from utils.address import EVMAddress
 from dotenv import dotenv_values    
 from web3 import Web3
-from copy import deepcopy
 
 class EVMGlobalState():
     """
@@ -34,7 +33,7 @@ class EVMContractStorage():
             self._bytecode: str = bytecode
             self._slots: dict[int: U256] = slots
             # Copy of original self._slots, immutable
-            self._immutable_slots: dict[int, U256] = slots.deepcopy()
+            self._immutable_slots: dict[int, U256] = slots.copy()
 
         def add_modified_slot(self, frame_number: int, slot: U256):
 
@@ -104,7 +103,7 @@ class EVMStorageMap():
         # Maps contract addresses to contract storage objects
         self._contract_mapping: dict[str: EVMContractStorage] = {}
         # Maps contract address to U256 values representing balances
-        self._balance_mapping = {}
+        self._balance_mapping: dict[str: U256] = {}
 
         url = dotenv_values("../.env")["API_URL"]
         self._w3 = Web3(Web3.HTTPProvider(url))
@@ -143,8 +142,8 @@ class EVMStorageMap():
 
     def add_contract(self, address: EVMAddress, data: EVMContractStorage, balance: U256):
 
-        self._contract[address.get_hex()] = data
-        self._contract[address.get_hex()] = balance
+        self._contract_mapping[address.get_hex()] = data
+        self._balance_mapping[address.get_hex()] = balance
 
     def set_slot_value(self, address: EVMAddress, slot_key: U256, slot_value: U256):
 

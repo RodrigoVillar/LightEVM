@@ -1,29 +1,11 @@
-"""
-Module containing all EVM opcode logic
-"""
-from EVMErrors import *
 
-def get_readable_opcode(code: str) -> str:
-    """
-    Returns opcode instruction in human readable format
-    If key is not in dictionary, returns 'INVALID'
+def get_readable_opcode(insn: str) -> str:
 
-    args:
-    code - must be CAPITALIZED
-    """
-    try:
-        return opcodes_str[code.upper()]
-    except:
+    if insn.upper() not in opcodes_str:
+
         return "INVALID"
 
-def get_opcode_gas(code: str) -> int:
-    """
-    Returns the gas the opcode passed in uses
-    """
-    try: 
-        return opcodes_gas[code.upper()]
-    except:
-        raise EVMGasNotImplemented()
+    return opcodes_str[insn.upper()]
 
 opcodes_str = {
 "00"      : "STOP",
@@ -240,124 +222,3 @@ swap_opcodes = [
     "9E",
     "9F"
 ]
-
-# The following opcodes have dynamic gas prices
-# EXP, SHA3, CALLDATACOPY, CODECOPY, EXTCODECOPY, SSTORE, LOG0, LOG1, LOG2,
-# LOG3, LOG4. CALL, CALLCODE, DELEGATECALL, SELFDESTRUCT
-opcodes_gas = {
-"00" : 		0,
-"01" : 		3,
-"02" : 		5,
-"03" : 		3,
-"04" : 		5,
-"05" : 		5,
-"06" : 		5,
-"07" : 		5,
-"08" : 		8,
-"09" : 		8,
-"0B" : 		5,
-"10" : 		3,
-"11" : 		3,
-"12" : 		3,
-"13" : 		3,
-"14" : 		3,
-"15" : 		3,
-"16" : 		3,
-"17" : 		3,
-"18" : 		3,
-"19" : 		3,
-"1A" : 		3,
-"30" : 		2,
-"31" : 		400,
-"32" : 		2,
-"33" : 		2,
-"34" : 		2,
-"35" : 		3,
-"36" : 		2,
-"38" : 		2,
-"3A" : 		2,
-"3B" : 		700,
-"40" : 		20,
-"41" : 		2,
-"42" : 		2,
-"43" : 		2,
-"44" : 		2,
-"45" : 		2,
-"50" : 		2,
-"51" : 		3,
-"52" : 		3,
-"53" : 		3,
-"54" :  	200,
-"56" : 		8,
-"57" : 		10,
-"58" : 		2,
-"59" : 		2,
-"5A" : 		2,
-"5B" : 		1,
-"60" : 3,  
-"61" : 3, 
-"62" : 3, 
-"63" : 3, 
-"64" : 3, 
-"65" : 3, 
-"66" : 3, 
-"67" : 3, 
-"68" : 3, 
-"69" : 3, 
-"6A" : 3, 
-"6B" : 3, 
-"6C" : 3, 
-"6D" : 3, 
-"6E" : 3, 
-"6F" : 3, 
-"70" : 3, 
-"71" : 3, 
-"72" : 3, 
-"73" : 3, 
-"74" : 3, 
-"75" : 3, 
-"76" : 3, 
-"77" : 3, 
-"78" : 3, 
-"79" : 3, 
-"7A" : 3, 
-"7B" : 3, 
-"7C" : 3, 
-"7D" : 3, 
-"7E" : 3, 
-"7F" : 3, 
-"80" : 3, 
-"81" : 3, 
-"82" : 3, 
-"83" : 3, 
-"84" : 3, 
-"85" : 3, 
-"86" : 3, 
-"87" : 3, 
-"88" : 3, 
-"89" : 3, 
-"8A" : 3, 
-"8B" : 3, 
-"8C" : 3, 
-"8D" : 3, 
-"8E" : 3, 
-"8F" : 3, 
-"90" : 3, 
-"91" : 3, 
-"92" : 3, 
-"93" : 3, 
-"94" : 3, 
-"95" : 3, 
-"96" : 3, 
-"97" : 3, 
-"98" : 3, 
-"99" : 3, 
-"9A" : 3, 
-"9B" : 3, 
-"9C" : 3, 
-"9D" : 3, 
-"9E" : 3, 
-"9F" : 3, 
-"F0" : 32000,
-"F3" : 0
-}

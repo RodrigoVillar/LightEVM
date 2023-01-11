@@ -5,14 +5,14 @@ Each function takes care of the associated stack, memory, program counter, and
 gas 
 """
 
-from evm import EVM, EVMInstruction
-from u256 import U256
-from gas import charge_gas, sstore_gas_check
-from hashing import keccak256
-from exceptions import *
-from data import EVMMemoryReturnValue
+from bytecode import EVMInstruction
+from utils.u256 import U256
+from utils.gas import charge_gas, sstore_gas_check
+from utils.hashing import keccak256
+from utils.exceptions import *
 from utils.address import EVMAddress
-from ..logs import EVMLog
+from logs import EVMLog
+from evm import EVM
 
 def stop(evm: EVM):
 
@@ -806,19 +806,19 @@ def jumpdest(evm: EVM):
     evm._pc += 1
     charge_gas(evm, "5B")
 
-def push(evm: EVM, bytes_to_push: int):
+def push(evm: EVM, bytes_to_push: str, size: int):
 
     evm._stack.push(
-        U256(bytes_to_push)
+        U256(int(bytes_to_push, 16))
     )
 
-    evm._pc += 1
+    evm._pc += 1 + size
 
     charge_gas(evm, "PUSH")
 
 def dup(evm: EVM, index_to_dup: int):
 
-    dup_value = evm._stack.get_item(U256(index_to_dup))
+    dup_value = evm._stack.get_item(U256(int(index_to_dup, 16)))
 
     evm._stack.push(
         dup_value
@@ -830,11 +830,11 @@ def dup(evm: EVM, index_to_dup: int):
 
 def swap(evm: EVM, index_to_swap: int):
 
-    b = evm._stack.get_item(U256(index_to_swap))
+    b = evm._stack.get_item(U256(int(index_to_swap, 16)))
     a = evm._stack.pop()
     
     evm._stack.push(b)
-    evm._stack.insert(U256(index_to_swap), a)
+    evm._stack.insert(U256(int(index_to_swap, 16)), a)
 
     evm._pc += 1
 
@@ -1122,7 +1122,7 @@ def match_insn(evm: EVM, insn: EVMInstruction):
     elif hex_insn == "5B":
         jumpdest(evm)
     elif readable_insn[:4] == "PUSH":
-        push(evm, insn.get_metadata())
+        push(evm, insn.get_metadata(), int(readable_insn[4:]))
     elif readable_insn[:3] == "DUP":
         dup(evm, insn.get_metadata())
     elif readable_insn[:4] == "SWAP":

@@ -2,7 +2,7 @@
 Module containing the address type
 """
 
-from u256 import *
+from utils.u256 import *
 
 class EVMAddressFailedInitialization(Exception):
 
@@ -38,7 +38,7 @@ class EVMAddress():
         return "0x" + self._hex_representation
 
     @staticmethod
-    def format(address: str):
+    def format(address: str) -> str:
         # First remove prefix if possible
         if address[:2].lower() == "0x":
             address = address[2:]
@@ -51,3 +51,5 @@ class EVMAddress():
         preprend_len = 40 - hex_str_len
         for i in range(preprend_len):
             address = "0" + address
+
+        return address

@@ -2,9 +2,9 @@
 Module containg the stack and memory data structures for the EVM
 """
 from utils.u256 import *
-from EVMErrors import *
 from math import floor
 from copy import deepcopy
+from utils.exceptions import *
 
 class EVMMemoryReturnValue():
     """
