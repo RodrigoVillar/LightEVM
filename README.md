@@ -14,6 +14,12 @@ writing a custom script to feed in their transaction
     virtual environment
 -   Run `pip install -r requirements.txt` to install all necessary dependencies
 
+## Setting Up .env File
+
+-   Using `template.env` as a base template, set `API_KEY` equal to the url of an
+    RPC node. Then rename `template.env` to `.env` so LightEVM can use said RPC
+    node to pull necessary contract data whenever it is not stored locally
+
 ## Running LightEVM
 
 Once setting up both the execution environment and `execution.toml`, run
@@ -31,3 +37,4 @@ For information regarding the semantics of `execution.toml`, please refer to the
     supported
 -   Furthermore, LightEVM does not support any transactions that result in the
     creation of new contracts
+-   All operations that utilize `API_URL` can be found in [`state.py`](./src/state.py)
