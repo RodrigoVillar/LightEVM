@@ -1,14 +1,14 @@
 """
 Module containining all EVM functionality
 """
-from utils.u256 import *
-from data import EVMMemory, EVMStack
-from transaction import EVMMessage, EVMTransaction
-from block import EVMBlock
-from state import EVMGlobalState, EVMStorage
-from bytecode import EVMRom
-from input import EVMInput
-from utils.address import EVMAddress
+from .utils.u256 import *
+from .data import EVMMemory, EVMStack
+from .transaction import EVMMessage, EVMTransaction
+from .block import EVMBlock
+from .state import EVMGlobalState, EVMStorage
+from .bytecode import EVMRom
+from .input import EVMInput
+from .utils.address import EVMAddress
 
 
 class EVMReturnFrame():

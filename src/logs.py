@@ -1,7 +1,7 @@
 """
 Module containing the EVMLog class
 """
-from utils.address import EVMAddress
+from .utils.address import EVMAddress
 
 class EVMLog:
     """

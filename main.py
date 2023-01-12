@@ -1,11 +1,13 @@
-from input import EVMInput
-from interpreter import EVMInterpreter
-import sys, toml
-from dotenv import dotenv_values
+from src.input import EVMInput
+from src.interpreter import EVMInterpreter
+from dotenv import load_dotenv
+import toml
 
 if __name__ == "__main__":
 
-    with open("../execution.toml", "r") as f:
+    load_dotenv()
+
+    with open("./execution.toml", "r") as f:
 
         toml_dict = toml.load(f)
         f.close()

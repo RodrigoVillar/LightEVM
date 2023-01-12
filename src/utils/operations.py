@@ -5,14 +5,14 @@ Each function takes care of the associated stack, memory, program counter, and
 gas 
 """
 
-from bytecode import EVMInstruction
-from utils.u256 import U256
-from utils.gas import charge_gas, sstore_gas_check
-from utils.hashing import keccak256
-from utils.exceptions import *
-from utils.address import EVMAddress
-from logs import EVMLog
-from evm import EVM
+from ..bytecode import EVMInstruction
+from .u256 import U256
+from .gas import charge_gas, sstore_gas_check
+from .hashing import keccak256
+from .exceptions import *
+from .address import EVMAddress
+from ..logs import EVMLog
+from ..evm import EVM
 
 def stop(evm: EVM):
 

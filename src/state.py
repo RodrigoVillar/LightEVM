@@ -1,10 +1,11 @@
 """
 Module containg the state class and the storage component of the EVM
 """
-from utils.u256 import U256
-from utils.address import EVMAddress
+from .utils.u256 import U256
+from .utils.address import EVMAddress
 from dotenv import dotenv_values    
 from web3 import Web3
+import os
 
 class EVMGlobalState():
     """
@@ -105,7 +106,7 @@ class EVMStorageMap():
         # Maps contract address to U256 values representing balances
         self._balance_mapping: dict[str: U256] = {}
 
-        url = dotenv_values("../.env")["API_URL"]
+        url = os.getenv("API_URL")
         self._w3 = Web3(Web3.HTTPProvider(url))
 
         self._block_number = block_number

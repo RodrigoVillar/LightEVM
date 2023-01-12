@@ -2,9 +2,9 @@
 Module containing the ROM and Instruction classes
 """
 
-from utils.exceptions import *
-from utils.u256 import U256
-import utils.opcodes
+from .utils.exceptions import *
+from .utils.u256 import U256
+from .utils.opcodes import get_readable_opcode, push_opcodes, dup_opcodes, swap_opcodes
 
 class EVMInstruction():
 
@@ -51,17 +51,17 @@ class EVMRom():
         while len(bytecode) != 0:
 
             op = bytecode[:2].upper()
-            readable_op = utils.opcodes.get_readable_opcode(op)
-            if op in utils.opcodes.push_opcodes:
+            readable_op = get_readable_opcode(op)
+            if op in push_opcodes:
                 chars_selected = int(readable_op[4:]) * 2
                 metadata = bytecode[2:2 + chars_selected]
                 insn = EVMInstruction(op, readable_op, metadata) 
                 bytecode = bytecode[2 + chars_selected:]   
-            elif op in utils.opcodes.dup_opcodes:
+            elif op in dup_opcodes:
                 metadata = int(readable_op[3:])
                 insn = EVMInstruction(op, readable_op, metadata)
                 bytecode = bytecode[2:]
-            elif op in utils.opcodes.swap_opcodes:
+            elif op in swap_opcodes:
                 metadata = int(readable_op[4:])
                 insn = EVMInstruction(op, readable_op, metadata)
                 bytecode = bytecode[2:]

@@ -2,10 +2,10 @@
 Module containing the EVM Input class
 """
 
-from state import EVMStorage, EVMContractStorage
-from utils.address import EVMAddress
-from utils.u256 import U256
-from logs import EVMLogStorage
+from .state import EVMStorage, EVMContractStorage
+from .utils.address import EVMAddress
+from .utils.u256 import U256
+from .logs import EVMLogStorage
 
 class EVMInput():
 

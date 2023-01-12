@@ -2,17 +2,17 @@
 File containing the U256 class and its associated logic
 """
 
-from utils.exceptions import *
+from .exceptions import *
 
 class U256:
 
     def __init__(self, value: int):
 
         if type(value) != int:
-            raise U256InvalidType(value)
+            raise U256InvalidInputType(value)
 
         if value < 0 or value > 2**256 - 1:
-            raise U256OutOfBounds(value)
+            raise U256InputOutOfBounds(value)
         
         self._value = value
 

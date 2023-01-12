@@ -2,11 +2,11 @@
 File containing all util-related exceptions
 """
 
-class U256OutOfBounds(Exception):
+class U256InputOutOfBounds(Exception):
 
     pass
 
-class U256InvalidType(Exception):
+class U256InvalidInputType(Exception):
 
     pass
 

@@ -1,8 +1,8 @@
 """
 Module containing the transaction/message classes for the EVM
 """
-from utils.u256 import *
-from utils.address import EVMAddress
+from .utils.u256 import *
+from .utils.address import EVMAddress
 
 class EVMTransaction():
     """

@@ -1,8 +1,8 @@
 """
 Module containing the Block class
 """
-from utils.address import EVMAddress
-from utils.u256 import U256
+from .utils.address import EVMAddress
+from .utils.u256 import U256
 
 class EVMBlock():
 

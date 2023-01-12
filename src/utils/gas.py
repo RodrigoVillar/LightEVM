@@ -1,6 +1,6 @@
 
-from utils.exceptions import *
-from evm import EVM
+from .exceptions import *
+from ..evm import EVM
 
 def sstore_gas_check(evm: EVM):
 

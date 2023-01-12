@@ -2,10 +2,10 @@
 Top level file that controls the VM environment and process
 """
 
-from evm import EVM
-from input import EVMInput
-from bytecode import EVMInstruction
-from utils.operations import match_insn
+from .evm import EVM
+from .input import EVMInput
+from .bytecode import EVMInstruction
+from .utils.operations import match_insn
 
 class EVMInterpreter():
 

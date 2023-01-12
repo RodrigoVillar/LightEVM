@@ -2,7 +2,7 @@
 Module containing the address type
 """
 
-from utils.u256 import *
+from .u256 import *
 
 class EVMAddressFailedInitialization(Exception):
 
