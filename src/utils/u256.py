@@ -3,6 +3,7 @@ File containing the U256 class and its associated logic
 """
 
 from .exceptions import * 
+from math import floor
 
 class U256:
 
@@ -131,11 +132,14 @@ class U256:
         first treats value as a nonnegative value, gets the binary version of
         it, and then converts it to a negative binary represenation via two's
         complement conversion.
+
+        If integer is not in the range [-2**255, 2**255 - 1], then
+        from_signed_integer() raises a U256InputOutOfBounds exception
         """
-        if value >= 0:
-            return U256(value)
-        elif value < -(2 ** 128): # If value is out of bounds for conversion
+        if value < -(2 ** 255) or value > (2**255 - 1): # If value is out of bounds for conversion
             raise U256InputOutOfBounds(value)
+        elif value >= 0:
+            return U256(value)
         else: # Conversion is possible
             abs_val = abs(value)
             abs_val_bin = U256(abs_val).to_binary_string()
@@ -151,7 +155,7 @@ class U256:
             for i in range(len(abs_val_bin_lst) - 1, -1, -1): # LOOP BACKWARDS   
 
                 if int(abs_val_bin_lst[i]) + temp == 2:
-                    abs_val_bin[i] = '0' # FIX
+                    abs_val_bin_lst[i] = '0' # FIX
                 elif int(abs_val_bin_lst[i]) + temp == 1:
                     temp = 0
                     abs_val_bin_lst[i] = '1' # FIX
@@ -372,8 +376,8 @@ class U256:
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
             raise U256InvalidInputType()
-        signed_a = U256.to_signed_int()
-        signed_b = U256.to_signed_int()
+        signed_a = a.to_signed_int()
+        signed_b = b.to_signed_int()
 
         if not signed_a < signed_b:
             return U256(0)
@@ -387,8 +391,8 @@ class U256:
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
             raise U256InvalidInputType()
-        signed_a = U256.to_signed_int()
-        signed_b = U256.to_signed_int()
+        signed_a = a.to_signed_int()
+        signed_b = b.to_signed_int()
 
         if not signed_a > signed_b:
             return U256(0)
@@ -464,26 +468,77 @@ class U256:
 
     @staticmethod
     def byte(i, x):
+        """
+        Isolate the ith byte of x
+        """
+        if not isinstance(i, U256) or not isinstance(x, U256):
 
-        pass
+            raise U256InvalidInputType()
+
+        i_val = i.to_int()
+
+        if i.to_int() > 31:
+
+            return U256(0)
+
+        x_binary = x.to_binary_string()
+
+        byte_segment = x_binary[(i_val*8): (i_val*8) + 8]
+        int_segment = int(byte_segment, 2)
+
+        return U256(int_segment)
 
     @staticmethod 
     def shl(shift, value):
         """
         Returns U256 object representing the result of value << shift
         """
-        pass
+        if not isinstance(shift, U256) or not isinstance(value, U256):
+
+            raise U256InvalidInputType()
+
+        shift_int = shift.to_int()
+        value_int = value.to_int()
+
+        return U256(
+            (value_int * (2**shift_int)) % (2**256)
+        )
 
     @staticmethod
     def shr(shift, value):
         """
         Returns U256 object representing the result of value >> shift
         """
-        pass
+        if not isinstance(shift, U256) or not isinstance(value, U256):
+
+            raise U256InvalidInputType()
+
+        shift_int = shift.to_int()
+        value_int = value.to_int()
+
+        if shift_int >= 256:
+            return U256(0)
+
+        return U256(
+            value_int >> shift_int
+        )
+
 
     @staticmethod
     def sar(shift, value):
         """
         Returns U256 object representing the result of value >> shift (arithmetic)
         """
-        pass
+        if not isinstance(shift, U256) or not isinstance(value, U256):
+
+            raise U256InvalidInputType()
+
+        shift_int = shift.to_signed_int()
+        value_signed_int = value.to_signed_int()
+
+        if shift_int >= 256:
+            return U256(0)
+
+        return U256.from_signed_integer(
+            value_signed_int >> shift_int
+        )

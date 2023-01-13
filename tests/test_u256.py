@@ -121,4 +121,15 @@ class TestUintMethods():
 
             assert(x.to_signed_int() == -1)
 
+        def test_three(self):
+
+            with pytest.raises(U256InputOutOfBounds):
+
+                x = U256.from_signed_integer(-(2**255) - 1)
+
+        def test_four(self):
+
+            with pytest.raises(U256InputOutOfBounds):
+
+                x = U256.from_signed_integer(2**255)
     
