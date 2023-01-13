@@ -45,3 +45,7 @@ class EVMOutsideStackBounds(Exception):
 class EVMUndefinedStackItem(Exception):
 
     pass
+
+class U256AddressConversionFailure(Exception):
+
+    pass

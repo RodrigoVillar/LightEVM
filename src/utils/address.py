@@ -18,7 +18,7 @@ class EVMAddress():
 
         if uint != None:
             self._uint_representation = uint
-            self._hex_representation = U256.to_address_hex(int)
+            self._hex_representation = uint.to_address_hex()
         elif hex != None:
             self._hex_representation == EVMAddress.format(hex)
             self._uint_representation == U256.from_hex(EVMAddress.format(hex))

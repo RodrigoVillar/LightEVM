@@ -2,11 +2,16 @@
 File containing the U256 class and its associated logic
 """
 
-from .exceptions import *
+from .exceptions import * 
 
 class U256:
 
     def __init__(self, value: int):
+        """
+        Args:
+
+        value - int in the range of [0, 2**256 - 1]
+        """
 
         if type(value) != int:
             raise U256InvalidInputType(value)
@@ -17,6 +22,9 @@ class U256:
         self._value = value
 
     def to_binary_string(self) -> str:
+        """
+        Returns a lowercase 256-bit binary string representation of the underlying value
+        """
         # Convert to Binary String
         temp_bin_value = bin(self._value)
         # Delete prefix
@@ -29,6 +37,10 @@ class U256:
         return temp_bin_value
 
     def to_hex_string(self) -> str:
+        """
+        Returns a lowercase 256-bit hexadecimal string representation of the
+        underlying value
+        """
         # Convert to Hex Value
         temp_hex_value = hex(self._value)
         # Delete prefix
@@ -39,6 +51,44 @@ class U256:
             temp_hex_value = "0" + temp_hex_value
 
         return temp_hex_value
+
+    def to_address_hex(self) -> str:
+        """
+        Returns a lowercase 160-bit hexadecimal string representation of the
+        underlying value. To be used whenever the value is to be represented as
+        an address
+
+        If the underlying value is not in the range of [0, 2**256 - 1], then
+        to_address_hex() raises an U256AddressConversionFailure exception
+        """
+        if self._value < 0 or self._value > (2**160 - 1):
+
+            raise U256AddressConversionFailure(self._value)
+
+        hex_str = hex(self._value)
+        # Remove prefix
+        hex_str = hex_str[2:]
+        # Check length
+        hex_str_len = len(hex_str)
+        # How many zeros to prepend if necessary
+        preprend_len = 40 - hex_str_len
+        for i in range(preprend_len):
+            hex_str = "0" + hex_str
+
+        return hex_str
+
+    @staticmethod
+    def from_hex(hex: str):
+        """
+        Returns a U256 object representing the unsigned integer value of the
+        hexadecimal string passed in
+        """
+        if hex[:2].lower() == "0x":
+
+            hex = hex[2:]
+
+        hex_int = int(hex, 16)
+        return U256(hex_int)
 
     def __str__(self):
         return self.to_hex_string()
@@ -85,7 +135,7 @@ class U256:
         if value >= 0:
             return U256(value)
         elif value < -(2 ** 128): # If value is out of bounds for conversion
-            raise U256OutOfBounds(value)
+            raise U256InputOutOfBounds(value)
         else: # Conversion is possible
             abs_val = abs(value)
             abs_val_bin = U256(abs_val).to_binary_string()
@@ -116,7 +166,7 @@ class U256:
         """
 
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         return U256((a._value + b._value) % (2**256)) 
 
@@ -126,7 +176,7 @@ class U256:
         Returns U256 object representing the product of the arguments passed through
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         return U256((a._value * b._value) % (2**256))
 
@@ -136,7 +186,7 @@ class U256:
         Returns U256 object representing the difference of the arguments passed through
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         return U256((a._value - b._value) % (2**256))
 
@@ -146,12 +196,12 @@ class U256:
         Returns U256 object representing the difference of the arguments passed through
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         if (b._value == 0):
             return U256(0)
 
-        return U256(a // b)
+        return U256(a._value // b._value)
 
     @staticmethod
     def mod(a, b):
@@ -159,9 +209,13 @@ class U256:
         Returns U256 object representing the result a mod b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
-        return U256(a % b)
+        if b.to_int() == 0:
+
+            return U256(0)
+
+        return U256(a._value % b._value)
 
     @staticmethod
     def addmod(a, b, N):
@@ -169,9 +223,28 @@ class U256:
         Returns U256 object representing the result of (a + b) mod N
         """
         if not isinstance(a, U256) or not isinstance(b, U256) or not isinstance(N, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
+
+        if N.to_int() == 0:
+
+            return U256(0)
         
-        return U256((a + b) % N)
+        return U256((a._value + b._value) % N._value)
+
+    @staticmethod
+    def __sign(a) -> int:
+        """
+        Returns integer representing the sign (1 or -1) of argument a
+        """
+        if not isinstance(a, U256):
+            raise U256InvalidInputType()
+
+        a_msb = a.to_binary_string()[0]
+
+        if a_msb == "1": # Negative
+            return -1
+        else: # Nonnegative
+            return 1
 
     @staticmethod
     def sdiv(a, b):
@@ -182,12 +255,23 @@ class U256:
         Temporarily utilizes arguments as signed integers
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         signed_a = a.to_signed_int()
         signed_b = b.to_signed_int()
 
-        return U256.from_signed_integer(signed_a // signed_b)
+        if signed_a == -(2**255) and signed_b == 0:
+            return U256.from_signed_integer(-(2**255))
+        elif signed_b == 0:
+            return U256(0)
+
+        a_sign = U256.__sign(a)
+        b_sign = U256.__sign(b)
+        sign = a_sign * b_sign
+
+        return U256.from_signed_integer(
+            sign * (abs(a.to_signed_int()) // abs(b.to_signed_int())) 
+        )
 
     @staticmethod
     def sign_extend(b, x):
@@ -199,7 +283,7 @@ class U256:
         Temporarily utilizes arguments as signed integers
         """
         if not isinstance(b, U256) or not isinstance(x, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
 
         # First grab the rightmost bits based on b
         binary_x = x.to_binary_string()
@@ -221,11 +305,18 @@ class U256:
         Temporarily utilizes arguments as signed integers
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         signed_a = a.to_signed_int()
         signed_b = b.to_signed_int()
 
-        return U256.from_signed_integer(signed_a % signed_b)
+        if signed_b == 0:
+            return U256(0)
+        
+        sign = U256.__sign(a)
+
+        return U256.from_signed_integer(
+            sign * (abs(signed_a) % abs(signed_b))
+        )
 
     @staticmethod
     def mulmod(a, b, N):
@@ -233,7 +324,11 @@ class U256:
         Returns U256 object representing the result (a * b) % N
         """
         if not isinstance(a, U256) or not isinstance(b, U256) or not isinstance(N, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
+
+        if N.to_signed_int() == 0:
+
+            return U256(0)
 
         return U256((a.to_int() * b.to_int()) % N.to_int())
 
@@ -243,8 +338,8 @@ class U256:
         Returns U256 object representing the result of a^b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
-        return U256((a ** b) % (2 ** 256))
+            raise U256InvalidInputType()
+        return U256((a._value ** b._value) % (2 ** 256))
 
     @staticmethod
     def lt(a, b):
@@ -252,7 +347,7 @@ class U256:
         Returns U256 object representing the result of a < b (UINT)
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         if not a.to_int() < b.to_int():
             return U256(0)
         else:
@@ -264,7 +359,7 @@ class U256:
         Returns U256 object representing the result of a > b (UINT)
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         if not a.to_int() > b.to_int():
             return U256(0)
         else:
@@ -276,7 +371,7 @@ class U256:
         Returns U256 object representing the result of a < b (SINT) 
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         signed_a = U256.to_signed_int()
         signed_b = U256.to_signed_int()
 
@@ -291,7 +386,7 @@ class U256:
         Returns U256 object representing the result of a > b (SINT)
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         signed_a = U256.to_signed_int()
         signed_b = U256.to_signed_int()
 
@@ -306,7 +401,7 @@ class U256:
         Returns U256 object representing the result of a == b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         if a.to_int() == b.to_int():
             return U256(1)
         else:
@@ -318,7 +413,7 @@ class U256:
         Returns U256 object representing the result of a == 0
         """
         if not isinstance(a, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         
         if a.to_int() == 0:
             return U256(1)
@@ -331,7 +426,7 @@ class U256:
         Returns U256 object representing the result of a & b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         return U256(a.to_int() & b.to_int())
 
     @staticmethod
@@ -340,7 +435,7 @@ class U256:
         Returns U256 object representing the result of a | b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         return U256(a.to_int() | b.to_int())
 
     @staticmethod
@@ -349,7 +444,7 @@ class U256:
         Returns U256 object representing the result of a ^ b
         """
         if not isinstance(a, U256) or not isinstance(b, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         return U256(a.to_int() ^ b.to_int())
 
     @staticmethod
@@ -358,7 +453,7 @@ class U256:
         Returns U256 object representing the result of ~a
         """
         if not isinstance(a, U256):
-            raise U256InvalidType()
+            raise U256InvalidInputType()
         a_binary_lst = list(a.to_binary_string())
         for i in range(len(a_binary_lst)):
             if a_binary_lst[i] == '0':
@@ -392,30 +487,3 @@ class U256:
         Returns U256 object representing the result of value >> shift (arithmetic)
         """
         pass
-
-    @staticmethod
-    def to_address_hex(address) -> str:
-        """
-        Use only if value is within range of [0, 2**160 - 1]
-        """
-        if not isinstance(address, U256):
-
-            raise Exception("arg is not of type U256!")
-
-        hex_str = hex(address.to_int())
-        # Remove prefix
-        hex_str = hex_str[2:]
-        # Check length
-        hex_str_len = len(hex_str)
-        # How many zeros to prepend if necessary
-        preprend_len = 40 - hex_str_len
-        for i in range(preprend_len):
-            hex_str = "0" + hex_str
-
-        return hex_str
-
-    @staticmethod
-    def from_hex(hex: str):
-
-        hex_int = int(hex, 16)
-        return U256(hex_int)
