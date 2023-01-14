@@ -139,3 +139,56 @@ class TestStackMethods:
             assert(
                 stack._stack[0].to_int() == 99 and stack._stack[1].to_int() == 99
             )
+
+    class TestSwap():
+
+        def test_one(self):
+
+            stack = EVMStack()
+
+            stack.push(U256(1))
+            stack.push(U256(2))
+
+            stack.swap(1)
+            assert(
+                stack._stack[0].to_int() == 1 and stack._stack[1].to_int() == 2
+            )
+
+        def test_two(self):
+
+            stack = EVMStack()
+
+            stack.push(U256(1))
+            stack.push(U256(2))
+            stack.push(U256(3))
+
+            stack.swap(2)
+
+            assert(
+                stack._stack[0].to_int() == 1 and stack._stack[2].to_int() == 3
+            )
+
+        def test_three(self):
+
+            stack = EVMStack()
+
+            with pytest.raises(EVMEmptyStack):
+                stack.swap(2)
+
+        def test_four(self):
+
+            stack = EVMStack()
+            stack.push(U256(11))
+
+            with pytest.raises(EVMStackItemEmpty):
+
+                stack.swap(12)
+
+        def test_five(self):
+
+            stack = EVMStack()
+            for i in range(16):
+                stack.push(U256(i))
+
+            with pytest.raises(EVMInvalidStackDupIndex):
+                stack.swap(17)

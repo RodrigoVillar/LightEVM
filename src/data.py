@@ -295,3 +295,14 @@ class EVMStack():
             0,
             copy.deepcopy(item_to_dup)
         )
+
+    def swap(self, index: int):
+
+        if len(self._stack) == 0:
+            raise EVMEmptyStack()
+        elif index > 16:
+            raise EVMInvalidStackDupIndex()
+        elif len(self._stack) < index:
+            raise EVMStackItemEmpty()
+
+        self._stack[0], self._stack[index] = self._stack[index], self._stack[0]

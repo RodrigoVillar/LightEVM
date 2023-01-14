@@ -826,7 +826,11 @@ def dup(evm: EVM, index_to_dup: int):
 
 def swap(evm: EVM, index_to_swap: int):
 
-    raise EVMOperationNotImplemented()
+    evm._stack.swap(index_to_swap)
+
+    evm._pc += 1
+
+    charge_gas(evm, "SWAP")
 
 def log0(evm: EVM):
 

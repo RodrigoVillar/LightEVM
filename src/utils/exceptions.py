@@ -69,3 +69,7 @@ class EVMStackItemEmpty(Exception):
 class EVMInvalidStackIndex(Exception):
 
     pass
+
+class EVMInvalidStackDupIndex(Exception):
+
+    pass
