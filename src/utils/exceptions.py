@@ -49,3 +49,23 @@ class EVMUndefinedStackItem(Exception):
 class U256AddressConversionFailure(Exception):
 
     pass
+
+class EVMStackInvalidInputType(Exception):
+
+    pass
+
+class EVMEmptyStack(Exception):
+
+    pass
+
+class EVMOperationNotImplemented(Exception):
+
+    pass
+
+class EVMStackItemEmpty(Exception):
+
+    pass
+
+class EVMInvalidStackIndex(Exception):
+
+    pass

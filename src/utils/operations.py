@@ -818,11 +818,7 @@ def push(evm: EVM, bytes_to_push: str, size: int):
 
 def dup(evm: EVM, index_to_dup: int):
 
-    dup_value = evm._stack.get_item(U256(int(index_to_dup, 16)))
-
-    evm._stack.push(
-        dup_value
-    )
+    evm._stack.dup(int)
 
     evm._pc += 1
 
@@ -830,15 +826,7 @@ def dup(evm: EVM, index_to_dup: int):
 
 def swap(evm: EVM, index_to_swap: int):
 
-    b = evm._stack.get_item(U256(int(index_to_swap, 16)))
-    a = evm._stack.pop()
-    
-    evm._stack.push(b)
-    evm._stack.insert(U256(int(index_to_swap, 16)), a)
-
-    evm._pc += 1
-
-    charge_gas(evm, "SWAP")
+    raise EVMOperationNotImplemented()
 
 def log0(evm: EVM):
 
@@ -952,39 +940,39 @@ def log4(evm: EVM):
 
 def create(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def call(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def callcode(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def return_op(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def delegatecall(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def create2(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def staticcall(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def revert(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def selfdestruct(evm: EVM):
 
-    pass
+    raise EVMOperationNotImplemented()
 
 def match_insn(evm: EVM, insn: EVMInstruction):
     """

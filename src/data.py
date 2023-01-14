@@ -5,6 +5,7 @@ from .utils.u256 import *
 from math import floor
 from copy import deepcopy
 from .utils.exceptions import *
+import copy
 
 class EVMMemoryReturnValue():
     """
@@ -227,9 +228,13 @@ class EVMStack():
 
     def __init__(self):
 
-        self._stack = []
+        self._stack: list[U256] = []
 
     def push(self, item: U256):
+
+        if not isinstance(item, U256):
+
+            raise EVMStackInvalidInputType(item)
         
         if (len(self._stack) + 1 > 1024):
 
@@ -239,7 +244,11 @@ class EVMStack():
 
     def pop(self) -> U256:
 
-        return self._stack.pop()
+        if len(self._stack) == 0:
+
+            raise EVMEmptyStack()
+
+        return self._stack.pop(0)
 
     def print(self):
 
@@ -249,15 +258,21 @@ class EVMStack():
             print(f"[{hex(counter)}] {self._stack[i]}")
             counter += 32
 
-    def get_item(self, index: U256) -> U256:
+    def __get_item(self, index: int) -> U256:
+        """
+        Internal method that retrieves stack item from position
 
-        if index.to_int() > 1024:
-            raise EVMOutsideStackBounds(index.to_int())
+        Stack items are indexed starting with 1 (top of stack has index one, the
+        item below that has index two, and so on)
+        """
+        if index < 1 or index > 32:
+
+            raise EVMInvalidStackIndex()
 
         try:
-            return self._stack[index.to_int()].deepcopy()
-        except:
-            raise EVMUndefinedStackItem(index.to_int())
+            return self._stack[index - 1]
+        except IndexError:
+            raise EVMStackItemEmpty(index)
 
     def replace(self, index: U256, new_value: U256) -> U256:
 
@@ -272,3 +287,11 @@ class EVMStack():
     def insert(self, index: U256, value: U256):
 
         pass
+
+    def dup(self, index: int):
+
+        item_to_dup = self.__get_item(index)
+        self._stack.insert(
+            0,
+            copy.deepcopy(item_to_dup)
+        )
