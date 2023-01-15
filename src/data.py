@@ -72,9 +72,12 @@ class EVMMemory():
 
     def load(self, offset: U256) -> EVMMemoryReturnValue:
         """
-        Function that loads U256 value from memory and returns said value inside
+        Function that loads U256 value from memory and returns value of type U256 inside
         an EVMMemoryReturnValue object
         """
+        if not isinstance(offset, U256):
+
+            raise EVMInvalidMemoryInput(offset)
 
         prior_mem_cost = self.get_mem_cost()
 
@@ -110,11 +113,20 @@ class EVMMemory():
         Since value is not guaranteed to be within the bounds of the U256 type,
         a hexadecimal string is returned
         """
+
+        if not isinstance(offset, U256) or not isinstance(length, U256):
+
+            raise EVMInvalidMemoryInput()
+
+        elif offset.to_int() + length.to_int() - 1 > 2** 253 - 1:
+
+            raise EVMMemoryOffsetTooLarge()
+
         prior_mem_cost = self.get_mem_cost()
 
         offset_val = offset.to_int()
         loaded_value_str = ""
-        for i in range(length):
+        for i in range(length.to_int()):
             try:
                 loaded_value_str = loaded_value_str + self._memory[offset_val + i] 
             except:
@@ -137,6 +149,18 @@ class EVMMemory():
         """
         Store U256 value into memory
         """
+        if not isinstance(offset, U256): 
+
+            raise EVMInvalidMemoryInput(offset)
+
+        elif not isinstance(value, U256):
+
+            raise EVMInvalidMemoryInput(value)
+
+        elif offset.to_int() > 2**253 - 1 - 32:
+
+            raise EVMMemoryOffsetTooLarge(offset)
+
         prior_mem_cost = self.get_mem_cost()
 
         value_hex_str = value.to_hex_string()
@@ -166,6 +190,15 @@ class EVMMemory():
         """
         Stores data of arbitrary length into memory
         """
+
+        if not isinstance(offset, U256) or not isinstance(length, U256) or not isinstance(data, str):
+            raise EVMInvalidMemoryInput()
+        elif length.to_int() != len(data) // 2 or len(data) % 2 != 0:
+            raise EVMMemoryInputLengthInconsistency()
+        elif (offset.to_int() + length.to_int() - 1) > (2**253 - 1):
+            raise EVMMemoryOffsetTooLarge()
+
+        data = data.lower()
         
         prior_mem_cost = self.get_mem_cost()
 
@@ -182,7 +215,7 @@ class EVMMemory():
 
             self._memory[offset_val + i] = chopped_data_list[i]
 
-        farthest_address = self._size + length - 1
+        farthest_address = self._size + length.to_int() - 1
 
         if farthest_address > self._size:
             self._size = farthest_address

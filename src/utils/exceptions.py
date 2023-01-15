@@ -73,3 +73,15 @@ class EVMInvalidStackIndex(Exception):
 class EVMInvalidStackDupIndex(Exception):
 
     pass
+
+class EVMInvalidMemoryInput(Exception):
+
+    pass
+
+class EVMMemoryOffsetTooLarge(Exception):
+
+    pass
+
+class EVMMemoryInputLengthInconsistency(Exception):
+
+    pass
